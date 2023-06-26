@@ -133,7 +133,7 @@ route set가 비어 있지 않고 route set의 첫 번째 URI에 lr 매개변수
 > A UAC SHOULD include a Contact header field in any target refresh requests within a dialog, and unless there is a need to change it, the URI SHOULD be the same as used in previous requests within the dialog. If the "secure" flag is true, that URI MUST be a SIPS URI. As discussed in Section 12.2.2, a Contact header field in a target refresh request updates the remote target URI. This allows a UA to provide a new contact address, should its address change during the duration of the dialog.
 UAC는 다이얼로그 내의 모든 target refresh request에 Contact 헤더 필드를 포함해야 하며, 변경할 필요가 없는 한 URI는 다이얼로그 내의 이전 요청에 사용된 것과 동일해야 한다. "secure" 플래그가 true이면 해당 URI는 SIPS URI여야 한다. 섹션 12.2.2에서 설명한 대로 target refresh request의 Contact 헤더 필드는 원격 대상 URI를 업데이트한다. 이렇게 하면 다이얼로그가 진행되는 동안 주소가 변경되는 경우 UA가 새 contact address를 제공할 수 있다.
 
->However, requests that are not target refresh requests do not affect the remote target URI for the dialog.
+> However, requests that are not target refresh requests do not affect the remote target URI for the dialog.
 그러나 target refresh 요청이 아닌 요청은 다이얼로그의 원격 대상 URI에 영향을 미치지 않는다.
 
 > The rest of the request is formed as described in Section 8.1.1.
