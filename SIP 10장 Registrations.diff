@@ -1,0 +1,249 @@
+10. Registrations
+
+10.1 Overview
+
+> SIP offers a discovery capability.  If a user wants to initiate a session with another user, SIP must discover the current host(s) at which the destination user is reachable.  This discovery process is frequently accomplished by SIP network elements such as proxy servers and redirect servers which are responsible for receiving a request, determining where to send it based on knowledge of the location of the user, and then sending it there.  To do this, SIP network elements consult an abstract service known as a location service, which provides address bindings for a particular domain.  These address bindings map an incoming SIP or SIPS URI, sip:bob@biloxi.com, for example, to one or more URIs that are somehow "closer" to the desired user, sip:bob@engineering.biloxi.com, for example. Ultimately, a proxy will consult a location service that maps a received URI to the user agent(s) at which the desired recipient is currently residing.
+SIP는 검색 기능을 제공한다. 사용자가 다른 사용자와 세션을 시작하려면 SIP는 대상 사용자가 연결할 수 있는 현재 호스트를 검색해야 한다. 이 검색 프로세스는 프록시 서버 및 리디렉션 서버와 같은 SIP 네트워크 요소에서 주로 수행되며, 이러한 요소는 요청을 수신하고 사용자 위치에 대한 지식을 기반으로 요청을 보낼 위치를 결정한 다음 해당 위치로 요청을 전송하는 역할을 담당한다.  이를 위해 SIP 네트워크 요소는 특정 도메인에 대한 address binding을 제공하는 location service라는 추상 서비스를 참조한다.  이러한 address binding은 예를 들어 들어오는 SIP 또는 SIPS URI(sip:bob@biloxi.com)를 원하는 사용자(예: sip:bob@engineering.biloxi.com)에 "closer" 하나 이상의 URI에 매핑한다. 궁극적으로 프록시는 수신된 URI를 원하는 수신자가 현재 상주하고 있는 UA에 매핑하는 location service를 참조한다.
+
+> Registration creates bindings in a location service for a particular domain that associates an address-of-record URI with one or more contact addresses.  Thus, when a proxy for that domain receives a request whose Request-URI matches the address-of-record, the proxy will forward the request to the contact addresses registered to that address-of-record.  Generally, it only makes sense to register an address-of-record at a domain's location service when requests for that address-of-record would be routed to that domain.  In most cases, this means that the domain of the registration will need to match the domain in the URI of the address-of-record.
+Registration은 특정 도메인에 대한 location service에 바인딩이 생성하여 address-of-record URI를 하나 이상의 contact address와 연결한다. 따라서 해당 도메인의 프로시가 Request-URI가 address-of-record와 일치하는 요청을 수신하면 프록시는 해당 address-of-record에 등록된 contact address로 요청을 전달한다. 일반적으로 해당 address-of-record에 대한 요청이 해당 도메인으로 라우팅되는 경우에만 도메인의 location service에 address-of-record를 등록하는 것이 합리적이다. 대부분의 경우, 이는 registration 도메인이 address-of-record의 URI에 있는 도메일과 일치해야 함을 의미한다.
+
+> There are many ways by which the contents of the location service can be established.  One way is administratively.  In the above example, Bob is known to be a member of the engineering department through access to a corporate database.  However, SIP provides a mechanism for a UA to create a binding explicitly.  This mechanism is known as registration.
+location service의 콘텐츠를 설정하는 방법에는 여러 가지가 있다.  한 가지 방법은 관리적으로 설정하는 것이다.  위의 예에서 Bob은 회사 데이터베이스에 대한 액세스를 통해 엔지니어링 부서의 구성원임을 알 수 있다.  그러나 SIP는 UA가 명시적으로 바인딩을 생성할 수 있는 메커니즘을 제공한다.  이 메커니즘을 registration이라고 한다.
+
+> Registration entails sending a REGISTER request to a special type of UAS known as a registrar.  A registrar acts as the front end to the location service for a domain, reading and writing mappings based on the contents of REGISTER requests.  This location service is then typically consulted by a proxy server that is responsible for routing requests for that domain.
+Registration을 하려면 registrar라고 하는 특수한 유형의 UAS에 REGISTER 요청을 보내야 한다. registrar는 도메인에 대한 location service의 프론트 엔드 역할을 하며, REGISTER 요청의 내용을 기반으로 매핑하고 읽고 쓴다. 그런 다음 이 location service는 일반적으로 해당 도메인에 대한 요청 라우팅을 담당하는 프록시 서버에서 참조한다.
+
+> An illustration of the overall registration process is given in Figure 2.  Note that the registrar and proxy server are logical roles that can be played by a single device in a network; for purposes of clarity the two are separated in this illustration.  Also note that UAs may send requests through a proxy server in order to reach a registrar if the two are separate elements.
+그림 2에는 전체 registration 프로세스가 설명되어 있다.  registrar와 프록시 서버는 네트워크에서 단일 디바이스가 수행할 수 있는 논리적 역할이며, 명확성을 위해 이 그림에서는 이 두 가지를 분리하여 설명한다.  또한 두 요소가 별개의 요소인 경우 UA는 프록시 서버를 통해 요청을 전송하여 registrar에 도달할 수 있다.
+
+> SIP does not mandate a particular mechanism for implementing the location service.  The only requirement is that a registrar for some domain MUST be able to read and write data to the location service, and a proxy or a redirect server for that domain MUST be capable of reading that same data.  A registrar MAY be co-located with a particular SIP proxy server for the same domain.
+SIP는 location service를 구현하기 위한 특정 메커니즘을 의무화하지 않는다.  유일한 요구 사항은 특정 도메인의 registrar가 location service에 대한 데이터를 읽고 쓸 수 있어야 하며, 해당 도메인의 프록시 또는 리디렉션 서버가 동일한 데이터를 읽을 수 있어야 한다는 것이다.  registrar는 동일한 도메인에 대한 특정 SIP 프록시 서버와 함께 위치할 수 있다.
+
+
+10.2 Constructing the REGISTER Request
+
+> REGISTER requests add, remove, and query bindings.  A REGISTER request can add a new binding between an address-of-record and one or more contact addresses.  Registration on behalf of a particular address-of-record can be performed by a suitably authorized third party.  A client can also remove previous bindings or query to determine which bindings are currently in place for an address-of- record.
+REGISTER 요청은 바인딩을 추가, 제거 및 쿼리한다. REGISTER 요청은 address-of-record와 하나 이상의 contact address 사이에 새 바인딩을 추가할 수 있다. 특정 address-of-record를 대신하여 Registration은 적절한 권한을 가진 제 3자가 수행할 수 있다. 클라이언트는 이전 바인딩을 제거하거나 쿼리를 통해 현재 address-of-record에 대해 어떤 바인딩이 설정되어 있는지 확인할 수도 있다.
+
+> Except as noted, the construction of the REGISTER request and the behavior of clients sending a REGISTER request is identical to the general UAC behavior described in Section 8.1 and Section 17.1.
+명시된 경우를 제외하고 REGISTER 요청의 구성과 REGISTER 요청을 보내는 클라이언트의 동작은 섹션 8.1 및 섹션 17.1에 설명된 일반적인 동작과 동일하다.
+
+> A REGISTER request does not establish a dialog.  A UAC MAY include a Route header field in a REGISTER request based on a pre-existing route set as described in Section 8.1.  The Record-Route header field has no meaning in REGISTER requests or responses, and MUST be ignored if present.  In particular, the UAC MUST NOT create a new route set based on the presence or absence of a Record-Route header field in any response to a REGISTER request.
+REGISTER 요청은 다이얼로그를 설정하지 않는다.  UAC는 섹션 8.1에 설명된 대로 기존 route set에 따라 REGISTER 요청에 Route 헤더 필드를 포함할 수 있다.  Record-Route 헤더 필드는 REGISTER 요청이나 응답에서 아무런 의미가 없으며, 존재할 경우 무시해야 한다.  특히, UAC는 REGISTER 요청에 대한 응답에서 Record-Route 헤더 필드의 유무에 따라 새 route set을 생성해서는 안 된다.
+
+> The following header fields, except Contact, MUST be included in a REGISTER request.  A Contact header field MAY be included:
+Contact를 제외한 헤더 필드는 REGISTER 요청에 반드시 포함되어야 한다. Contact 헤더 필드는 포함될 수 있다.
+
+>	Request-URI: The Request-URI names the domain of the location service for which the registration is meant (for example, "sip:chicago.com").  The "userinfo" and "@" components of the SIP URI MUST NOT be present.
+	Request-URI: Request-URI는 registration을 위한 location service의 도메인의 이름이다(예: "sip:chicago.com").  SIP URI의 "userinfo" 및 "@" 구성 요소는 없어야 한다.
+	
+>	To: The To header field contains the address of record whose registration is to be created, queried, or modified.  The To header field and the Request-URI field typically differ, as the former contains a user name.  This address-of-record MUST be a SIP URI or SIPS URI.
+	To: To 헤더 필드에는 registration을 생성, 쿼리 또는 수정할 address-of-record가 포함된다.  To 헤더 필드와 Request-URI 필드는 일반적으로 다르며, 전자는 사용자 이름을 포함하기 때문이다.  이 address-of-record는 반드시 SIP URI 또는 SIPS URI여야 한다.
+	
+>	From: The From header field contains the address-of-record of the person responsible for the registration.  The value is the same as the 	To header field unless the request is a third- party registration.
+	From: From 헤더 필드에는 registration을 담당한 사람의 address-of-record가 포함된다.  이 값은 요청이 third- party registration이 아닌 한 To 헤더 필드와 동일하다.
+	
+>	Call-ID: All registrations from a UAC SHOULD use the same Call-ID header field value for registrations sent to a particular registrar. 
+	Call-ID: UAC의 모든 registration은 특정 registrar로 전송되는 registration에 동일한 Call-ID 헤더 필드 값을 사용해야 한다. 
+	
+>		If the same client were to use different Call-ID values, a registrar could not detect whether a delayed REGISTER request might have arrived out of order.
+		동일한 클라이언트가 다른 Call-ID 값을 사용하는 경우, registrar은 지연된 REGISTER 요청이 정상적으로 도착했는지 여부를 감지할 수 없다.
+		
+>	CSeq: The CSeq value guarantees proper ordering of REGISTER requests.  A UA MUST increment the CSeq value by one for each REGISTER request with the same Call-ID.
+	CSeq: CSeq 값은 REGISTER 요청의 적절한 순서를 보장한다.  UA는 동일한 Call-ID를 가진 각 REGISTER 요청에 대해 CSeq 값을 1씩 증가시켜야 한다.
+	
+>	Contact: REGISTER requests MAY contain a Contact header field with zero or more values containing address bindings.
+	Contact: REGISTER 요청에는 address binding이 포함된 값이 0개 이상인 Contact 헤더 필드가 포함될 수 있다.
+	
+> UAs MUST NOT send a new registration (that is, containing new Contact header field values, as opposed to a retransmission) until they have received a final response from the registrar for the previous one or the previous REGISTER request has timed out.
+UA는 이전 REGISTER에 대한 registrar의 최종 응답을 받거나 이전 REGISTER 요청이 timeout될 때까지 새 registration(즉, 재전송이 아닌 새 Contact 헤더 필드 값을 포함하는)을 전송해서는 안 된다.
+
+> The following Contact header parameters have a special meaning in REGISTER requests:
+다음 Contact 헤더 매개변수는 REGISTER 요청에서 특별한 의미를 갖는다.
+
+>	action: The "action" parameter from RFC 2543 has been deprecated. UACs SHOULD NOT use the "action" parameter.
+	action: RFC 2543의 "action" 매개변수는 더 이상 사용되지 않는다. UAC는 "action" 파라미터를 사용해서는 안 된다.
+	
+>	expires: The "expires" parameter indicates how long the UA would like the binding to be valid.  The value is a number indicating seconds.  If this parameter is not provided, the value of the Expires header field is used instead. Implementations MAY treat values larger than 2**32-1 (4294967295 seconds or 136 years) as equivalent to 2**32-1. Malformed values SHOULD be treated as equivalent to 3600.
+	expires: "expires" 매개 변수는 UA가 바인딩을 유효하게 유지하려는 기간을 나타낸다.  값은 초를 나타내는 숫자다.  이 매개 변수를 제공하지 않으면 Expires 헤더 필드의 값이 대신 사용된다. 구현에서는 2**32-1(4294967295초 또는 136년)보다 큰 값을 2**32-1에 해당하는 것으로 처리할 수 있다. 잘못된 값은 3600에 해당하는 것으로 처리해야 한다.
+	
+
+10.2.1 Adding Bindings
+
+> The REGISTER request sent to a registrar includes the contact address(es) to which SIP requests for the address-of-record should be forwarded.  The address-of-record is included in the To header field of the REGISTER request.
+registrar에 전송되는 REGISTER 요청에는 address-of-record에 대한 SIP 요청을 전달해야 하는 contact address가 포함된다.  address-of-record는 REGISTER 요청의 To 헤더 필드에 포함된다.
+
+> The Contact header field values of the request typically consist of SIP or SIPS URIs that identify particular SIP endpoints (for example, "sip:carol@cube2214a.chicago.com"), but they MAY use any URI scheme. A SIP UA can choose to register telephone numbers (with the tel URL, RFC 2806 [9]) or email addresses (with a mailto URL, RFC 2368 [32]) as Contacts for an address-of-record, for example.
+요청의 Contact 헤더 필드 값은 일반적으로 특정 SIP 엔드포인트(예: "sip:carol@cube2214a.chicago.com")를 식별하는 SIP 또는 SIPS URI로 구성되지만, 모든 URI 체계를 사용할 수도 있다. 예를 들어 SIP UA는 전화 번호(tel URL, RFC 2806 [9] 포함) 또는 이메일 주소(mailto URL, RFC 2368 [32] 포함)를 address-of-record에 대한 Contact로 등록하도록 선택할 수 있다.
+
+> For example, Carol, with address-of-record "sip:carol@chicago.com", would register with the SIP registrar of the domain chicago.com.  Her registrations would then be used by a proxy server in the chicago.com domain to route requests for Carol's address-of-record to her SIP endpoint.
+예를 들어 기록 주소가 "sip:carol@chicago.com"인 Carol은 chicago.com 도메인의 SIP registrar에 등록한다.  그러면 chicago.com 도메인의 프록시 서버가 registration을 사용하여 Carol의 address-of-record에 대한 요청을 SIP 엔드포인트로 라우팅한다.
+
+> Once a client has established bindings at a registrar, it MAY send subsequent registrations containing new bindings or modifications to existing bindings as necessary.  The 2xx response to the REGISTER request will contain, in a Contact header field, a complete list of bindings that have been registered for this address-of-record at this registrar.
+클라이언트가 registrar에 바인딩을 설정한 후에는 필요에 따라 새 바인딩 또는 기존 바인딩에 대한 수정 사항이 포함된 후속 registration을 보낼 수 있다.  REGISTER 요청에 대한 2xx 응답에는 Contact 헤더 필드에 이 registrar에서 이 address-of-record에 대해 등록된 바인딩의 전체 목록이 포함된다.
+
+> If the address-of-record in the To header field of a REGISTER request is a SIPS URI, then any Contact header field values in the request SHOULD also be SIPS URIs.  Clients should only register non-SIPS URIs under a SIPS address-of-record when the security of the resource represented by the contact address is guaranteed by other means. This may be applicable to URIs that invoke protocols other than SIP, or SIP devices secured by protocols other than TLS.
+REGISTER 요청의 To 헤더 필드에 있는 address-of-record가 SIPS URI인 경우, 요청의 모든 Contact 헤더 필드 값도 SIPS URI여야 한다.  클라이언트는 contact address로 표시되는 리소스의 보안이 다른 방법으로 보장되는 경우에만 SIPS address-of-record 아래에 non-SIPS URI를 등록해야 한다. 이는 SIP 이외의 프로토콜을 호출하는 URI 또는 TLS 이외의 프로토콜로 보호되는 SIP 장치에 적용될 수 있다.
+
+> Registrations do not need to update all bindings.  Typically, a UA only updates its own contact addresses.
+Registration 시 바인딩을 업데이트할 필요는 없다. 일반적으로 UA는 자체 contact address만 업데이트한다.
+
+
+10.2.1.1 Setting the Expiration Interval of Contact Addresses
+
+> When a client sends a REGISTER request, it MAY suggest an expiration interval that indicates how long the client would like the registration to be valid.  (As described in Section 10.3, the registrar selects the actual time interval based on its local policy.)
+클라이언트가 REGISTER 요청을 보낼 때, 클라이언트가 registration의 유효 기간을 나타내는 만료 간격을 제안할 수 있다. (섹션 10.3에 설명된 대로 registrar는 해당 지역 정책에 따라 실제 시간 간격을 선택합니다.)
+
+> There are two ways in which a client can suggest an expiration interval for a binding: through an Expires header field or an "expires" Contact header parameter.  The latter allows expiration intervals to be suggested on a per-binding basis when more than one binding is given in a single REGISTER request, whereas the former suggests an expiration interval for all Contact header field values that do not contain the "expires" parameter.
+클라이언트가 바인딩에 대한 만료 간격을 제안할 수 있는 방법에는 Expires 헤더 필드 또는 "Expires" Contact 헤더 매개변수를 통해 두 가지가 있다. 후자는 단일 REGISTER 요청에 둘 이상의 바인딩이 제공될 때 바인딩별로 만료 간격을 제안할 수 있는 반면, 전자는 "Expires" 매개변수가 포함되지 않은 모든 Contact 헤더 필드 값에 대해 만료 간격을 제안한다.
+
+> If neither mechanism for expressing a suggested expiration time is present in a REGISTER, the client is indicating its desire for the server to choose.
+제안된 만료 시간을 표현하는 메커니즘이 모두 REGISTER에 존재하지 않는 경우 클라이언트는 서버가 선택하기를 원하는 것을 나타낸다.
+
+
+10.2.1.2 Preferences among Contact Addresses
+
+> If more than one Contact is sent in a REGISTER request, the registering UA intends to associate all of the URIs in these Contact header field values with the address-of-record present in the To field.  This list can be prioritized with the "q" parameter in the Contact header field.  The "q" parameter indicates a relative preference for the particular Contact header field value compared to other bindings for this address-of-record.  Section 16.6 describes how a proxy server uses this preference indication.
+REGISTER 요청에 두 개 이상의 Contact가 전송되는 경우 등록 UA는 이러한 Contact 헤더 필드 값의 모든 URI를 To 필드에 있는 address-of-record와 연결하려고 한다.  이 목록은 Contact 헤더 필드에 있는 "q" 매개변수를 사용하여 우선순위를 지정할 수 있다.  "q" 매개변수는 이 address-of-record에 대한 다른 바인딩과 비교하여 특정 Contact 헤더 필드 값에 대한 상대적인 선호도를 나타낸다.  섹션 16.6에서는 프록시 서버가 이 기본 설정 표시를 사용하는 방법에 대해 설명한다.
+
+
+10.2.2 Removing Bindings
+
+> Registrations are soft state and expire unless refreshed, but can also be explicitly removed.  A client can attempt to influence the expiration interval selected by the registrar as described in Section 10.2.1.  A UA requests the immediate removal of a binding by specifying an expiration interval of "0" for that contact address in a REGISTER request.  UAs SHOULD support this mechanism so that bindings can be removed before their expiration interval has passed.
+registration은 soft 상태이며 새로 고치지 않으면 만료되지만 명시적으로 제거할 수도 있다.  클라이언트는 섹션 10.2.1에 설명된 대로 registrar가 선택한 만료 간격에 영향을 줄 수 있다.  UA는 REGISTER 요청에서 해당 contact address에 대해 만료 간격을 "0"으로 지정하여 바인딩의 즉각적인 제거를 요청한다.  UA는 만료 간격이 지나기 전에 바인딩을 제거할 수 있도록 이 메커니즘을 지원해야 한다.
+
+> The REGISTER-specific Contact header field value of "*" applies to all registrations, but it MUST NOT be used unless the Expires header field is present with a value of "0".
+"*"라는 REGISTER 특정 Contact 헤더 필드 값은 모든 등록에 적용되지만, "0" 값을 가진 Expires 헤더 필드가 존재하지 않을 경우에는 사용해서는 안 된다.
+
+>	Use of the "*" Contact header field value allows a registering UA to remove all bindings associated with an address-of-record without knowing their precise values.
+	"*" Contact 헤더 필드 값을 사용하면 등록 UA가 정확한 값을 몰라도 address-of-record와 관련된 모든 바인딩을 제거할 수 있다.
+	
+
+10.2.3 Fetching Bindings
+
+> A success response to any REGISTER request contains the complete list of existing bindings, regardless of whether the request contained a Contact header field.  If no Contact header field is present in a REGISTER request, the list of bindings is left unchanged.
+REGISTER 요청에 대한 성공 응답에는 요청에 Contact 헤더 필드가 포함되어 있는지 여부와 관계없이 기존 바인딩의 전체 목록이 포함된다.  REGISTER 요청에 Contact 헤더 필드가 없는 경우 바인딩 목록은 변경되지 않다.
+
+
+10.2.4 Refreshing Bindings
+
+> Each UA is responsible for refreshing the bindings that it has previously established.  A UA SHOULD NOT refresh bindings set up by other UAs.
+각 UA는 이전에 설정한 바인딩을 새로 고칠 책임이 있다.  UA는 다른 UA가 설정한 바인딩을 새로 고쳐서는 안 된다.
+
+> The 200 (OK) response from the registrar contains a list of Contact fields enumerating all current bindings.  The UA compares each contact address to see if it created the contact address, using comparison rules in Section 19.1.4.  If so, it updates the expiration time interval according to the expires parameter or, if absent, the Expires field value.  The UA then issues a REGISTER request for each of its bindings before the expiration interval has elapsed.  It MAY combine several updates into one REGISTER request.
+registrar의 200(OK) 응답에는 현재 모든 바인딩을 열거하는 Contact 필드 목록이 포함된다.  UA는 섹션 19.1.4의 비교 규칙을 사용하여 각 contact address를 비교하여 contact address를 생성했는지 확인한다.  그렇다면 expires 매개변수 또는 없는 경우 Expires 필드 값에 따라 만료 시간 간격을 업데이트한다.  그런 다음 UA는 만료 간격이 경과하기 전에 각 바인딩에 대해 REGISTER 요청을 발행한다.  여러 업데이트를 하나의 REGISTER 요청으로 결합할 수도 있다.
+
+> A UA SHOULD use the same Call-ID for all registrations during a single boot cycle.  Registration refreshes SHOULD be sent to the same network address as the original registration, unless redirected.
+UA는 단일 부팅 주기 동안 모든 registration에 동일한 Call-ID를 사용해야 한다.  registration을 refresh하는 것은 리디렉션되지 않는 한 original registration과 동일한 네트워크 주소로 전송되어야 한다.
+
+
+10.2.5 Setting the Internal Clock
+
+> If the response for a REGISTER request contains a Date header field, the client MAY use this header field to learn the current time in order to set any internal clocks.
+REGISTER 요청에 대한 응답에 Date 헤더 필드가 포함된 경우 클라이언트는 이 헤더 필드를 사용하여 internal clocks를 설정하기 위해 현재 시간을 알아낼 수 있다.
+
+
+10.2.6 Discovering a Registrar
+
+> UAs can use three ways to determine the address to which to send registrations:  by configuration, using the address-of-record, and multicast.  A UA can be configured, in ways beyond the scope of this specification, with a registrar address.  If there is no configured registrar address, the UA SHOULD use the host part of the address- of-record as the Request-URI and address the request there, using the normal SIP server location mechanisms [4].  For example, the UA for the user "sip:carol@chicago.com" addresses the REGISTER request to "sip:chicago.com".
+UA는 구성, address-of-record 사용, 멀티캐스트의 세 가지 방법을 사용하여 registration을 보낼 주소를 결정할 수 있다.  이 사양의 범위를 벗어나는 방법으로 registrar address를 사용하여 UA를 구성할 수 있다.  구성된 registrar address가 없는 경우, UA는 일반적인 SIP 서버 위치 메커니즘[4]을 사용하여 address-of-record의 호스트 부분을 Request-URI로 사용하고 해당 주소로 요청을 주소 지정해야 한다.  예를 들어 "sip:carol@chicago.com" 사용자에 대한 UA는 REGISTER 요청을 "sip:chicago.com"으로 주소 지정한다.
+
+> Finally, a UA can be configured to use multicast.  Multicast registrations are addressed to the well-known "all SIP servers" multicast address "sip.mcast.net" (224.0.1.75 for IPv4).  No well- known IPv6 multicast address has been allocated; such an allocation will be documented separately when needed.  SIP UAs MAY listen to that address and use it to become aware of the location of other local users (see [33]); however, they do not respond to the request.
+마지막으로 멀티캐스트를 사용하도록 UA를 구성할 수 있다.  멀티캐스트 registration은 잘 알려진 "all SIP servers" 멀티캐스트 주소인 "sip.mcast.net"(IPv4의 경우 224.0.1.75)으로 주소가 지정된다.  잘 알려진 IPv6 멀티캐스트 주소는 할당되지 않았으며, 이러한 할당은 필요할 때 별도로 문서화될 예정이다.  SIP UA는 해당 주소를 수신하여 다른 로컬 사용자의 위치를 파악하는 데 사용할 수 있지만([33] 참조), 요청에 응답하지는 않는다.
+
+>	Multicast registration may be inappropriate in some environments, for example, if multiple businesses share the same local area network.
+	여러 비즈니스가 동일한 근거리 통신망을 공유하는 경우와 같이 일부 환경에서는 멀티캐스트 registration이 부적절할 수 있다.
+	
+
+10.2.7 Transmitting a Request
+
+> Once the REGISTER method has been constructed, and the destination of the message identified, UACs follow the procedures described in Section 8.1.2 to hand off the REGISTER to the transaction layer.
+REGISTER 메서드가 구성되고 메시지의 목적지가 식별되면 UAC는 섹션 8.1.2에 설명된 절차에 따라 REGISTER를 트랜잭션 계층에 넘긴다.
+
+> If the transaction layer returns a timeout error because the REGISTER yielded no response, the UAC SHOULD NOT immediately re-attempt a registration to the same registrar.
+트랜잭션 계층이 registrar에서 응답이 없어 timeout error를 반환하는 경우, UAC는 동일한 registrar에 registaration을 즉시 다시 시도해서는 안 된다.
+
+>	An immediate re-attempt is likely to also timeout.  Waiting some reasonable time interval for the conditions causing the timeout to be corrected reduces unnecessary load on the network.  No specific interval is mandated.
+	즉시 다시 시도하면 timeout가 발생할 수 있다.  timeout을 유발하는 조건이 수정될 때까지 적당한 시간 간격을 두고 기다리면 네트워크의 불필요한 부하를 줄일 수 있다.  특정 간격은 강제되지 않다.
+	
+
+10.2.8 Error Responses
+
+> If a UA receives a 423 (Interval Too Brief) response, it MAY retry the registration after making the expiration interval of all contact addresses in the REGISTER request equal to or greater than the expiration interval within the Min-Expires header field of the 423 (Interval Too Brief) response.
+UA가 423(Interval Too Brief) 응답을 수신하는 경우, REGISTER 요청에 포함된 모든 contact address의 만료 간격을 423(Interval Too Brief) 응답의 Min-Expires 헤더 필드에 있는 만료 간격보다 크게 설정한 후 registration를 다시 시도할 수 있다.
+
+
+10.3 Processing REGISTER Requests
+
+> A registrar is a UAS that responds to REGISTER requests and maintains a list of bindings that are accessible to proxy servers and redirect servers within its administrative domain.  A registrar handles requests according to Section 8.2 and Section 17.2, but it accepts only REGISTER requests.  A registrar MUST not generate 6xx responses.
+registrar는 REGISTER 요청에 응답하고 관리 도메인 내에서 프록시 서버 및 리디렉션 서버에 액세스할 수 있는 바인딩 목록을 유지하는 UAS이다.  registrar는 섹션 8.2 및 섹션 17.2에 따라 요청을 처리하지만 REGISTER 요청만 수락한다.  registrar는 6xx 응답을 생성해서는 안 된다.
+
+> A registrar MAY redirect REGISTER requests as appropriate.  One common usage would be for a registrar listening on a multicast interface to redirect multicast REGISTER requests to its own unicast interface with a 302 (Moved Temporarily) response.
+registrar은 필요에 따라 REGISTER 요청을 리디렉션할 수 있다.  한 가지 일반적인 사용법은 멀티캐스트 인터페이스에서 수신 중인 registrar이 302(Moved Temporarily) 응답을 통해 멀티캐스트 REGISTER 요청을 자체 유니캐스트 인터페이스로 리디렉션하는 것입니다.
+
+> Registrars MUST ignore the Record-Route header field if it is included in a REGISTER request.  Registrars MUST NOT include a Record-Route header field in any response to a REGISTER request.
+registrar는 Record-Route 헤더 필드가 REGISTER 요청에 포함되어 있는 경우 이를 무시해야 한다.  registrar은 REGISTER 요청에 대한 응답에 Record-Route 헤더 필드를 포함해서는 안 된다.
+
+>	A registrar might receive a request that traversed a proxy which treats REGISTER as an unknown request and which added a Record- Route header field value.
+	registrar은 REGISTER를 알 수 없는 요청으로 처리하고 Record- Route 헤더 필드 값을 추가한 프록시를 통과한 요청을 수신할 수 있다.
+	
+> A registrar has to know (for example, through configuration) the set of domain(s) for which it maintains bindings.  REGISTER requests MUST be processed by a registrar in the order that they are received. REGISTER requests MUST also be processed atomically, meaning that a particular REGISTER request is either processed completely or not at all.  Each REGISTER message MUST be processed independently of any other registration or binding changes.
+registrar은 바인딩을 유지하는 도메인 집합을 구성 등을 통해 알고 있어야 한다.  REGISTER 요청은 접수된 순서대로 registrar에서 처리해야 한다. 또한 REGISTER 요청은 원자 단위로 처리되어야 하며, 이는 특정 REGISTER 요청이 완전히 처리되거나 전혀 처리되지 않음을 의미한다.  각 REGISTER 메시지는 다른 registration 또는 바인딩 변경 사항과 독립적으로 처리되어야 한다.
+
+> When receiving a REGISTER request, a registrar follows these steps:
+REGISTER 요청을 받으면 registrar은 다음 단계를 따릅니다:
+
+>	1. The registrar inspects the Request-URI to determine whether it has access to bindings for the domain identified in the Request-URI.  If not, and if the server also acts as a proxy server, the server SHOULD forward the request to the addressed domain, following the general behavior for proxying messages described in Section 16.
+	1. registrar은 Request-URI을 검사하여 Request-URI에 식별된 도메인에 대한 바인딩에 액세스할 수 있는지 확인한다.  그렇지 않은 경우, 그리고 서버가 프록시 서버 역할도 하는 경우 서버는 섹션 16에 설명된 메시지 프록시에 대한 일반적인 동작에 따라 요청을 주소가 지정된 도메인으로 전달해야 한다.
+	
+>	2. To guarantee that the registrar supports any necessary extensions, the registrar MUST process the Require header field values as described for UASs in Section 8.2.2.
+	2. registrar이 필요한 확장을 지원하도록 하기 위해 registrar은 섹션 8.2.2의 UAS에 대해 설명된 대로 Require 헤더 필드 값을 처리해야 한다.
+	
+>	3. A registrar SHOULD authenticate the UAC.  Mechanisms for the authentication of SIP user agents are described in Section 22. Registration behavior in no way overrides the generic authentication framework for SIP.  If no authentication mechanism is available, the registrar MAY take the From address as the asserted identity of the originator of the request.
+	3. registrar은 UAC를 인증해야 한다.  SIP UA의 인증 메커니즘은 섹션 22에 설명되어 있다. Registration 동작은 SIP 에 대한 일반 인증 프레임워크보다 우선하지 않는다.  인증 메커니즘을 사용할 수 없는 경우 registrar은 From address를 요청 발신자의 신원 간주할 수 있다.
+	
+>	4. The registrar SHOULD determine if the authenticated user is authorized to modify registrations for this address-of-record. For example, a registrar might consult an authorization database that maps user names to a list of addresses-of-record for which that user has authorization to modify bindings.  If the authenticated user is not authorized to modify bindings, the registrar MUST return a 403 (Forbidden) and skip the remaining steps.
+	4. registrar은 인증된 사용자가 이 address-of-record에 대한 registration을 수정할 권한이 있는지 확인해야 한다. 예를 들어, registrar은 사용자 이름을 바인딩을 수정할 권한이 있는 address-of-record 목록에 매핑하는 권한 데이터베이스를 참조할 수 있다.  인증된 사용자에게 바인딩을 수정할 권한이 없는 경우 registrar은 403(Forbidden)을 반환하고 나머지 단계를 건너뛰어야 한다.
+	
+>	In architectures that support third-party registration, one entity may be responsible for updating the registrations associated with multiple addresses-of-record.
+	third-party registration을 지원하는 아키텍처에서는 한 법인이 여러 addresses-of-record와 관련된 registration을 업데이트할 책임이 있을 수 있다.
+	
+>	5. The registrar extracts the address-of-record from the To header field of the request.  If the address-of-record is not valid for the domain in the Request-URI, the registrar MUST send a 404 (Not Found) response and skip the remaining steps.  The URI MUST then be converted to a canonical form.  To do that, all URI parameters MUST be removed (including the user-param), and any escaped characters MUST be converted to their unescaped form.  The result serves as an index into the list of bindings.
+	5. registrar은 요청의 To 헤더 필드에서 address-of-record를 추출한다.  Request-URI의 address-of-record가 도메인에 유효하지 않은 경우 registrar은 404(Not Found) 응답을 전송하고 나머지 단계를 건너뛰어야 한다.  그런 다음 URI를 표준 형식으로 변환해야 한다.  이를 위해 사용자 매개변수를 포함한 모든 URI 매개변수를 제거하고 이스케이프된 문자를 이스케이프되지 않은 형태로 변환해야 한다.  결과는 바인딩 목록에 대한 인덱스 역할을 한다.
+	
+>	6. The registrar checks whether the request contains the Contact header field.  If not, it skips to the last step.  If the Contact header field is present, the registrar checks if there is one Contact field value that contains the special value "*" and an Expires field.  If the request has additional Contact fields or an expiration time other than zero, the request is invalid, and the server MUST return a 400 (Invalid Request) and skip the remaining steps.  If not, the registrar checks whether the Call-ID agrees with the value stored for each binding.  If not, it MUST remove the binding.  If it does agree, it MUST remove the binding only if the CSeq in the request is higher than the value stored for that binding.  Otherwise, the update MUST be aborted and the request fails.
+	6. registrar이 요청에 Contact 헤더 필드가 포함되어 있는지 확인한다.  그렇지 않은 경우 마지막 단계로 건너뛴다.  Contact 헤더 필드가 있는 경우 registrar은 특수 값 "*"가 포함된 Contact 필드 값과 Expires 필드가 하나 있는지 확인한다.  요청에 추가 Contact 필드 또는 만료 시간이 0이 아닌 경우 요청이 유효하지 않으며 서버는 400(Invalid Request)을 반환하고 나머지 단계를 건너뛰어야 한다.  그렇지 않은 경우, registrar은 Call-ID가 각 바인딩에 대해 저장된 값과 일치하는지 확인한다.  일치하지 않으면 바인딩을 제거해야 한다.  일치하는 경우 요청의 CSeq가 해당 바인딩에 대해 저장된 값보다 높은 경우에만 바인딩을 제거해야 한다.  그렇지 않으면 업데이트를 중단하고 요청이 실패한다.
+	
+>	7. The registrar now processes each contact address in the Contact header field in turn.  For each address, it determines the expiration interval as follows:
+	7. 이제 registrar가 Contact 헤더 필드에 있는 각 contact address를 차례로 처리한다.  각 주소에 대해 다음과 같이 만료 간격을 결정한다:
+	
+>		-  If the field value has an "expires" parameter, that value MUST be taken as the requested expiration.
+		- 필드 값에 'expires' 매개변수가 있는 경우 해당 값을 요청된 만료로 사용해야 한다.
+		
+>		-  If there is no such parameter, but the request has an Expires header field, that value MUST be taken as the requested expiration.
+		- 이러한 매개 변수가 없지만 요청에 Expires 헤더 필드가 있는 경우 해당 값을 요청된 만료로 사용해야 한다.
+		
+>		-  If there is neither, a locally-configured default value MUST be taken as the requested expiration.
+		- 둘 다 없는 경우 로컬로 구성된 기본값을 요청된 만료로 사용해야 한다.
+		
+>	The registrar MAY choose an expiration less than the requested expiration interval.  If and only if the requested expiration interval is greater than zero AND smaller than one hour AND less than a registrar-configured minimum, the registrar MAY reject the registration with a response of 423 (Interval Too Brief).  This response MUST contain a Min-Expires header field that states the minimum expiration interval the registrar is willing to honor.  It then skips the remaining steps.
+	registrar은 요청된 만료 간격보다 짧은 만료를 선택할 수 있다.  요청된 만료 간격이 0보다 크고 1시간보다 작으며 registrar가 구성한 최소 만료 간격보다 작은 경우에만 registrar은 423(Interval Too Brief) 응답을 보내 registartion을 거부할 수 있다.  이 응답에는 registrar이 준수하고자 하는 최소 만료 간격을 명시하는 Min-Expires 헤더 필드가 포함되어야 한다.  그런 다음 나머지 단계를 건너뛴다.
+	
+>	Allowing the registrar to set the registration interval protects it against excessively frequent registration refreshes while limiting the state that it needs to maintain and decreasing the likelihood of registrations going stale.  The expiration interval of a registration is frequently used in the creation of services.  An example is a follow-me service, where the user may only be available at a terminal for a brief period.  Therefore, registrars should accept brief registrations; a request should only be rejected if the interval is so short that the refreshes would degrade registrar performance.
+	registrar이 registration 간격을 설정할 수 있도록 허용하면 registration이 지나치게 자주 새로 고쳐지는 것을 방지함과 동시에 유지해야 하는 상태를 제한하고 registration이 부실해질 가능성을 줄일 수 있다.   registration이 만료 간격은 서비스를 만들 때 자주 사용된다.  예를 들어 사용자가 단말기에서 짧은 기간 동안만 사용할 수 있는 follow-me 서비스를 들 수 있다.  따라서 registrar는 짧은 등록을 수락해야 하며, 그 간격이 너무 짧아서 새로 고침으로 인해 registrar의 성능이 저하되는 경우에만 요청을 거부해야 한다.
+	
+>	For each address, the registrar then searches the list of current bindings using the URI comparison rules.  If the binding does not exist, it is tentatively added.  If the binding does exist, the registrar checks the Call-ID value.  If the Call-ID value in the existing binding differs from the Call-ID value in the request, the binding MUST be removed if the expiration time is zero and updated otherwise.  If they are the same, the registrar compares the CSeq value.  If the value is higher than that of the existing binding, it MUST update or remove the binding as above.  If not, the update MUST be aborted and the request fails.
+	그런 다음 registrar는 각 주소에 대해 URI 비교 규칙을 사용하여 현재 바인딩 목록을 검색한다.  바인딩이 존재하지 않으면 임시로 추가된다.  바인딩이 존재하는 경우 registrar는 Call-ID 값을 확인한다.  기존 바인딩의 Call-ID 값이 요청의 Call-ID 값과 다른 경우 만료 시간이 0이면 바인딩을 제거해야 하고 그렇지 않으면 업데이트해야 한다.  둘이 같으면 registrar는 CSeq 값을 비교한다.  값이 기존 바인딩보다 높으면 위와 같이 바인딩을 업데이트하거나 제거해야 한다.  그렇지 않으면 업데이트를 중단하고 요청이 실패한다.
+	
+>	This algorithm ensures that out-of-order requests from the same UA are ignored.
+	이 알고리즘은 동일한 UA의 순서가 맞지 않는 요청을 무시하도록 한다.
+	
+>	Each binding record records the Call-ID and CSeq values from the request.
+	각 바인딩 레코드는 요청의 Call-ID 및 CSeq 값을 기록한다.
+	
+>	The binding updates MUST be committed (that is, made visible to the proxy or redirect server) if and only if all binding updates and additions succeed.  If any one of them fails (for example, because the back-end database commit failed), the request MUST fail with a 500 (Server Error) response and all tentative binding updates MUST be removed.
+	바인딩 업데이트는 모든 바인딩 업데이트 및 추가가 성공하는 경우에만 커밋(즉, 프록시 또는 리디렉션 서버에 표시)되어야 한다.  이 중 하나라도 실패하면(예: 백엔드 데이터베이스 커밋이 실패하여) 요청은 500(Server Error) 응답으로 실패해야 하며 모든 임시 바인딩 업데이트가 제거되어야 한다.
+	
+>	8. The registrar returns a 200 (OK) response.  The response MUST contain Contact header field values enumerating all current bindings.  Each Contact value MUST feature an "expires" parameter indicating its expiration interval chosen by the registrar.  The response SHOULD include a Date header field.
+	8. registrar가 200(OK) 응답을 반환한다.  응답에는 모든 현재 바인딩을 열거하는 Contact 헤더 필드 값이 포함되어야 한다.  각 Contact 값에는 registrar에서 선택한 만료 간격을 나타내는 "expires" 매개변수가 포함되어야 한다.  응답에는 Date 헤더 필드가 포함되어야 한다.
