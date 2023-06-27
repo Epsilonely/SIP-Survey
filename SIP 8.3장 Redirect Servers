@@ -1,0 +1,40 @@
+8.3 Redirect Servers
+
+> In some architectures it may be desirable to reduce the processing load on proxy servers that are responsible for routing requests, and improve signaling path robustness, by relying on redirection.
+일부 아키텍처에서는 리디렉션에 의존하여 요청 라우팅을 담당하는 프록시 서버의 처리 부하를 줄이고 시그널링 경로의 견고성을 개선하는 것이 바람직할 수 있다.
+
+> Redirection allows servers to push routing information for a request back in a response to the client, thereby taking themselves out of the loop of further messaging for this transaction while still aiding in locating the target of the request.  When the originator of the request receives the redirection, it will send a new request based on the URI(s) it has received.  By propagating URIs from the core of the network to its edges, redirection allows for considerable network scalability.
+리디렉션을 사용하면 서버가 클라이언트에 대한 응답으로 요청에 대한 라우팅 정보를 다시 삽입하여 해당 트랜잭션에 대한 추가 메시징 루프에서 벗어나면서 요청 대상을 찾는 데 도움을 줄 수 있다.  요청의 발신자가 리디렉션을 받으면 수신한 URI를 기반으로 새 요청을 보낸다.  리디렉션은 네트워크의 코어에서 엣지로 URI를 전파함으로써 상당한 네트워크 확장성을 제공한다.
+
+> A redirect server is logically constituted of a server transaction layer and a transaction user that has access to a location service of some kind (see Section 10 for more on registrars and location services).  This location service is effectively a database containing mappings between a single URI and a set of one or more alternative locations at which the target of that URI can be found.
+리디렉션 서버는 논리적으로 서버 트랜잭션 계층과 특정 종류의 위치 서비스에 액세스할 수 있는 트랜잭션 사용자로 구성됩니다(registrars 및 location service에 대한 자세한 내용은 섹션 10 참조).  이 location service는 사실상 단일 URI와 해당 URI의 대상을 찾을 수 있는 하나 이상의 대체 위치 집합 간의 매핑을 포함하는 데이터베이스이다.
+
+> A redirect server does not issue any SIP requests of its own.  After receiving a request other than CANCEL, the server either refuses the request or gathers the list of alternative locations from the location service and returns a final response of class 3xx.  For well-formed CANCEL requests, it SHOULD return a 2xx response.  This response ends the SIP transaction.  The redirect server maintains transaction state for an entire SIP transaction.  It is the responsibility of clients to detect forwarding loops between redirect servers.
+리디렉션 서버는 자체적으로 SIP 요청을 발행하지 않는다.  서버는 CANCEL 이외의 요청을 수신한 후 요청을 거부하거나 location service에서 대체 위치 목록을 수집하여 클래스 3xx의 최종 응답을 반환한다.  제대로 구성된 CANCEL 요청의 경우 2xx 응답을 반환해야 한다.  이 응답은 SIP 트랜잭션을 종료한다.  리디렉션 서버는 전체 SIP 트랜잭션에 대한 트랜잭션 상태를 유지한다.  리디렉션 서버 간의 포워딩 루프를 감지하는 것은 클라이언트의 책임이다.
+
+> When a redirect server returns a 3xx response to a request, it populates the list of (one or more) alternative locations into the Contact header field.  An "expires" parameter to the Contact header field values may also be supplied to indicate the lifetime of the Contact data.
+리디렉션 서버가 요청에 대해 3xx 응답을 반환하면 Contact 헤더 필드에 (하나 이상의) 대체 위치 목록을 채운다.  Contact 데이터의 수명을 나타내기 위해 Contact 헤더 필드 값에 "expires" 매개변수를 제공할 수도 있다.
+
+> The Contact header field contains URIs giving the new locations or user names to try, or may simply specify additional transport parameters.  A 301 (Moved Permanently) or 302 (Moved Temporarily) response may also give the same location and username that was targeted by the initial request but specify additional transport parameters such as a different server or multicast address to try, or a change of SIP transport from UDP to TCP or vice versa.
+Contact 헤더 필드에는 시도할 새 위치 또는 사용자 이름을 제공하는 URI가 포함되어 있거나 추가 전송 매개변수를 지정할 수도 있다.  301(Moved Permanently) 또는 302(Moved Temporarily) 응답은 초기 요청의 대상과 동일한 위치 및 사용자 이름을 제공하지만 시도할 다른 서버 또는 멀티캐스트 주소, UDP에서 TCP로 또는 그 반대로 SIP 전송을 변경하는 등의 추가 전송 매개변수를 지정할 수도 있다.
+
+> However, redirect servers MUST NOT redirect a request to a URI equal to the one in the Request-URI; instead, provided that the URI does not point to itself, the server MAY proxy the request to the destination URI, or MAY reject it with a 404.
+그러나  리디렉션 서버는 Request-URI에 있는 것과 동일한 URI로 요청을 리디렉션해서는 안되며, 대신 URI가 자신을 가리키지 않는 경우 서버는 요청을 대상 URI로 프록시하거나 404로 요청을 거부할 수 있다.
+
+>	If a client is using an outbound proxy, and that proxy actually redirects requests, a potential arises for infinite redirection loops.
+	클라이언트가 아웃바운드 프록시를 사용 중이고 해당 프록시가 실제로 요청을 리디렉션하는 경우 무한 리디렉션 루프가 발생할 가능성이 있다.
+	
+> Note that a Contact header field value MAY also refer to a different resource than the one originally called.  For example, a SIP call connected to PSTN gateway may need to deliver a special informational announcement such as "The number you have dialed has been changed."
+Contact 헤더 필드 값이 원래 전화를 걸었던 리소스가 아닌 다른 리소스를 가리킬 수도 있다는 점에 유의해라.  예를 들어 PSTN 게이트웨이에 연결된 SIP 통화에서는 "전화를 건 번호가 변경되었습니다."와 같은 특별한 정보 안내를 전달해야 할 수도 있다.
+
+> A Contact response header field can contain any suitable URI indicating where the called party can be reached, not limited to SIP URIs.  For example, it could contain URIs for phones, fax, or irc (if they were defined) or a mailto:  (RFC 2368 [32]) URL.  Section 26.4.4 discusses implications and limitations of redirecting a SIPS URI to a non-SIPS URI.
+Contact 응답 헤더 필드에는 호출한 상대방에게 연락할 수 있는 위치를 나타내는 적절한 URI를 포함할 수 있으며, SIP URI에 국한되지 않는다.  예를 들어 전화, 팩스 또는 irc(정의된 경우)에 대한 URI 또는 mailto:(RFC 2368 [32]) URL을 포함할 수 있다.  섹션 26.4.4에서는 SIPS URI를 비 SIPS URI로 리디렉션하는 것의 의미와 한계에 대해 설명한다.
+
+> The "expires" parameter of a Contact header field value indicates how long the URI is valid.  The value of the parameter is a number indicating seconds.  If this parameter is not provided, the value of the Expires header field determines how long the URI is valid. Malformed values SHOULD be treated as equivalent to 3600.
+Contact 헤더 필드 값의 "expires" 매개 변수는 URI가 얼마나 오래 유효한지를 나타낸다.  이 매개변수의 값은 초를 나타내는 숫자이며, 이 매개 변수를 제공하지 않으면 Expires 헤더 필드 값에 따라 URI가 유효한 기간이 결정된다. 잘못된 값은 3600에 해당하는 것으로 처리해야 한다.
+
+>	This provides a modest level of backwards compatibility with RFC 2543, which allowed absolute times in this header field.  If an absolute time is received, it will be treated as malformed, and then default to 3600.
+	이렇게 하면 이 헤더 필드에 절대 시간을 허용했던 RFC 2543과의 역호환성이 어느 정도 보장된다. 절대 시간이 수신되면 잘못된 것으로 처리되고 기본값은 3600으로 설정된다.
+	
+> Redirect servers MUST ignore features that are not understood(including unrecognized header fields, any unknown option tags in Require, or even method names) and proceed with the redirection of the request in question.
+리디렉션 서버는 인식할 수 없는 헤더 필드(Require의 알 수 없는 옵션 태그, 메서드 이름 등), 이해할 수 없는 기능을 무시하고 해당 요청의 리디렉션을 진행해야 한다.
