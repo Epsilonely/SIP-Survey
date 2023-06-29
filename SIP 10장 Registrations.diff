@@ -78,7 +78,7 @@ registrar에 전송되는 REGISTER 요청에는 address-of-record에 대한 SIP 
 요청의 Contact 헤더 필드 값은 일반적으로 특정 SIP 엔드포인트(예: "sip:carol@cube2214a.chicago.com")를 식별하는 SIP 또는 SIPS URI로 구성되지만, 모든 URI 체계를 사용할 수도 있다. 예를 들어 SIP UA는 전화 번호(tel URL, RFC 2806 [9] 포함) 또는 이메일 주소(mailto URL, RFC 2368 [32] 포함)를 address-of-record에 대한 Contact로 등록하도록 선택할 수 있다.
 
 > For example, Carol, with address-of-record "sip:carol@chicago.com", would register with the SIP registrar of the domain chicago.com.  Her registrations would then be used by a proxy server in the chicago.com domain to route requests for Carol's address-of-record to her SIP endpoint.
-예를 들어 기록 주소가 "sip:carol@chicago.com"인 Carol은 chicago.com 도메인의 SIP registrar에 등록한다.  그러면 chicago.com 도메인의 프록시 서버가 registration을 사용하여 Carol의 address-of-record에 대한 요청을 SIP 엔드포인트로 라우팅한다.
+예를 들어 address-of-record가 "sip:carol@chicago.com"인 Carol은 chicago.com 도메인의 SIP registrar에 등록한다.  그러면 chicago.com 도메인의 프록시 서버가 registration을 사용하여 Carol의 address-of-record에 대한 요청을 SIP 엔드포인트로 라우팅한다.
 
 > Once a client has established bindings at a registrar, it MAY send subsequent registrations containing new bindings or modifications to existing bindings as necessary.  The 2xx response to the REGISTER request will contain, in a Contact header field, a complete list of bindings that have been registered for this address-of-record at this registrar.
 클라이언트가 registrar에 바인딩을 설정한 후에는 필요에 따라 새 바인딩 또는 기존 바인딩에 대한 수정 사항이 포함된 후속 registration을 보낼 수 있다.  REGISTER 요청에 대한 2xx 응답에는 Contact 헤더 필드에 이 registrar에서 이 address-of-record에 대해 등록된 바인딩의 전체 목록이 포함된다.
@@ -201,7 +201,7 @@ REGISTER 요청을 받으면 registrar은 다음 단계를 따릅니다:
 	2. registrar이 필요한 확장을 지원하도록 하기 위해 registrar은 섹션 8.2.2의 UAS에 대해 설명된 대로 Require 헤더 필드 값을 처리해야 한다.
 	
 >	3. A registrar SHOULD authenticate the UAC.  Mechanisms for the authentication of SIP user agents are described in Section 22. Registration behavior in no way overrides the generic authentication framework for SIP.  If no authentication mechanism is available, the registrar MAY take the From address as the asserted identity of the originator of the request.
-	3. registrar은 UAC를 인증해야 한다.  SIP UA의 인증 메커니즘은 섹션 22에 설명되어 있다. Registration 동작은 SIP 에 대한 일반 인증 프레임워크보다 우선하지 않는다.  인증 메커니즘을 사용할 수 없는 경우 registrar은 From address를 요청 발신자의 신원 간주할 수 있다.
+	3. registrar은 UAC를 인증해야 한다.  SIP UA의 인증 메커니즘은 섹션 22에 설명되어 있다. Registration 동작은 SIP 에 대한 일반 인증 프레임워크보다 우선하지 않는다.  인증 메커니즘을 사용할 수 없는 경우 registrar은 From address를 요청 발신자의 신원으로 간주할 수 있다.
 	
 >	4. The registrar SHOULD determine if the authenticated user is authorized to modify registrations for this address-of-record. For example, a registrar might consult an authorization database that maps user names to a list of addresses-of-record for which that user has authorization to modify bindings.  If the authenticated user is not authorized to modify bindings, the registrar MUST return a 403 (Forbidden) and skip the remaining steps.
 	4. registrar은 인증된 사용자가 이 address-of-record에 대한 registration을 수정할 권한이 있는지 확인해야 한다. 예를 들어, registrar은 사용자 이름을 바인딩을 수정할 권한이 있는 address-of-record 목록에 매핑하는 권한 데이터베이스를 참조할 수 있다.  인증된 사용자에게 바인딩을 수정할 권한이 없는 경우 registrar은 403(Forbidden)을 반환하고 나머지 단계를 건너뛰어야 한다.
