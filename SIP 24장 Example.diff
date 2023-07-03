@@ -1,0 +1,19 @@
+24.2 Session Setup
+
+> This example contains the full details of the example session setup in Section 4.  The message flow is shown in Figure 1.  Note that these flows show the minimum required set of header fields - some other header fields such as Allow and Supported would normally be present.
+이 예제에는 섹션 4의 예제 세션 설정에 대한 전체 세부 정보가 포함되어 있다.  메시지 흐름은 그림 1에 나와 있습니다.  이 흐름은 최소한의 필수 헤더 필드 집합을 보여 주며, Allow 및 Supported 과 같은 다른 헤더 필드도 일반적으로 존재할 수 있다는 점에 유의하라.
+
+F1 INVITE Alice -> atlanta.com proxy
+
+	INVITE sip:bob@biloxi.com SIP/2.0
+	Via: SIP/2.0/UDP pc33.atlanta.com;branch=z9hG4bKnashds8
+	Max-Forwards: 70
+	To: Bob <sip:bob@biloxi.com>
+	From: Alice <sip:alice@atlanta.com>;tag=1928301774
+	Call-ID: a84b4c76e66710
+	CSeq: 314159 INVITE
+	Contact: <sip:alice@pc33.atlanta.com>
+	Content-Type: application/sdp
+	Content-Length: 142
+
+(Alice's SDP not shown)
