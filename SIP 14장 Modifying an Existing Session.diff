@@ -28,7 +28,7 @@ session description 형식에 버전 번호 기능이 있는 경우 제공 업�
 re-INVITE의 To, From, Call-ID, CSeq 및 Request-URI는 섹션 12에 설명된 기존 다이얼로그 내의 일반 요청과 동일한 규칙에 따라 설정된다.
 
 > A UAC MAY choose not to add an Alert-Info header field or a body with Content-Disposition "alert" to re-INVITEs because UASs do not typically alert the user upon reception of a re-INVITE.
-UAC는 일반적으로 re-INVITE 수신 시 사용자에게 알림을 보내지 않기 때문에 re-INVITE에 Alert-Info 헤더 필드 또는 Content-Disposition "alert"가 있는 body 를 추가하지 않을 수도 있다.
+UAS는 일반적으로 re-INVITE 수신 시 사용자에게 알림을 보내지 않기 때문에 UAC는 re-INVITE에 Alert-Info 헤더 필드 또는 Content-Disposition "alert"가 있는 body 를 추가하지 않을 수도 있다.
 
 > Unlike an INVITE, which can fork, a re-INVITE will never fork, and therefore, only ever generate a single final response.  The reason a re-INVITE will never fork is that the Request-URI identifies the target as the UA instance it established the dialog with, rather than identifying an address-of-record for the user.
 fork가 가능한 INVITE와 달리 re-INVITE는 절대 fork되지 않으므로 최종 응답을 단 한 번만 생성한다.  re-INVITE가 fork되지 않는 이유는 Request-URI가 사용자의 address-of-record를 식별하는 것이 아니라 다이얼로그를 설정한 UA 인스턴스로 대상을 식별하기 때문이다.
@@ -73,7 +73,7 @@ re-INVITE를 전송하는 규칙과 re-INVITE에 대한 2xx 응답에 대한 ACK
 동일한 다이얼로그에서 더 낮은 CSeq 시퀀스 번호를 가진 첫 번째 INVITE에 최종 응답을 보내기 전에 두 번째 INVITE를 수신하는 UAS는 두 번째 INVITE에 500(Server Internal Error) 응답을 반환해야 하며 0~10초 사이에서 임의로 선택된 값으로 Retry-After 헤더 필드를 포함해야 한다.
 
 > A UAS that receives an INVITE on a dialog while an INVITE it had sent on that dialog is in progress MUST return a 491 (Request Pending) response to the received INVITE.
-해당 다이얼로그에서 보낸 INVITE가 진행 중일 때 다이얼로그에서 INVITE를 받은 UAS는 수신한 INVITE에 대해 491(Request Pending) 응답을 반환해야 한다.\
+해당 다이얼로그에서 보낸 INVITE가 진행 중일 때 다이얼로그에서 INVITE를 받은 UAS는 수신한 INVITE에 대해 491(Request Pending) 응답을 반환해야 한다.
 
 > If a UA receives a re-INVITE for an existing dialog, it MUST check any version identifiers in the session description or, if there are no version identifiers, the content of the session description to see if it has changed.  If the session description has changed, the UAS MUST adjust the session parameters accordingly, possibly after asking the user for confirmation.
 UA가 기존 다이얼로그에 대한 re-INVITE를 수신하면 session description의 버전 식별자를 확인하거나 버전 식별자가 없는 경우 session description의 내용을 확인하여 session description이 변경되었는지 확인해야 한다.  session description이 변경된 경우 UAS는 사용자에게 확인을 요청한 후 세션 매개변수를 적절히 조정해야 한다.

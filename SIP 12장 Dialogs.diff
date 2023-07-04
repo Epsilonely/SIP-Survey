@@ -87,7 +87,7 @@ target refresh request은 다이얼로그의 원격 대상 URI만 업데이트�
 12.2.1.1 Generating the request
 
 > A request within a dialog is constructed by using many of the components of the state stored as part of the dialog. 
- 다이얼로그 내의 요청은 다이얼로그의 일부로 저장된 상태의 많은 구성 요소를 사용하여 구성한다.
+다이얼로그 내의 요청은 다이얼로그의 일부로 저장된 상태의 많은 구성 요소를 사용하여 구성한다.
 
 > The URI in the To field of the request MUST be set to the remote URI from the dialog state. The tag in the To header field of the request MUST be set to the remote tag of the dialog ID. The From URI of the request MUST be set to the local URI from the dialog state. The tag in the From header field of the request MUST be set to the local tag of the dialog ID. If the value of the remote or local tags is null, the tag parameter MUST be omitted from the To or From header fields, respectively.
 요청의 To 필드에 있는 URI는 다이얼로그의 원격 URI로 설정되어야 한다. 요청의 To 태그는 다이얼로그 ID의 원격 태그로 설정되어야 한다. 요청의 From URI는 다이얼로그의 로컬 URI로 설정되어야 한다.  요청의 From 태그는 다이얼로그 ID의 로컬 태그로 설정되어야 한다. 원격 또는 로컬 태그의 값이 null인 경우 태그 매개변수는 각각 To 또는 From 헤더 필드에서 생략되어야 한다.
@@ -123,13 +123,13 @@ route set이 비어 있지 않고 첫 번째 URI에 lr 매개 변수가 포함�
 > For example, if the remote target is sip:user@remoteua and the route set contains:
 원격 대상이 "sip:user@remoteua"이고 route set에 다음이 포함된 경우:
 
- <sip:proxy1>,<sip:proxy2>,<sip:proxy3;lr>,<sip:proxy4>
+	<sip:proxy1>,<sip:proxy2>,<sip:proxy3;lr>,<sip:proxy4>
 
 > The request will be formed with the following Request-URI and Route header field:
 요청은 다음과 같은 Request-URI 및 Route 헤더 필드로 구성된다.
 
- METHOD sip:proxy1
- Route: <sip:proxy2>,<sip:proxy3;lr>,<sip:proxy4>,<sip:user@remoteua>
+	METHOD sip:proxy1
+	Route: <sip:proxy2>,<sip:proxy3;lr>,<sip:proxy4>,<sip:user@remoteua>
 
 >	If the first URI of the route set does not contain the lr parameter, the proxy indicated does not understand the routing mechanisms described in this document and will act as specified in RFC 2543, replacing the Request-URI with the first Route header field value it receives while forwarding the message. 	Placing the Request-URI at the end of the Route header field preserves the information in that Request-URI across the strict router (it will be returned to the Request-URI when the request reaches a loose-router).
 	route set의 첫 번째 URI에 lr 매개변수가 포함되어 있지 않은 경우, 표시된 프록시는 이 문서에 설명된 라우팅 메커니즘을 이해하지 못하며 RFC 2543에 지정된 대로 작동하여 메시지를 전달하는 동안 수신하는 첫 번째 Route 헤더 필드 값으로 Request-URI를 대체한다. 	Route 헤더 필드 끝에 Request-URI를 배치하면 엄격한 router 전체에서 해당 Request-URI의 정보가 보존된다. (요청이 느슨한 router에 도달하면 Request-URI로 반환 된다.
