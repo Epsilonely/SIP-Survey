@@ -1,0 +1,549 @@
+16. Proxy Behavior
+
+16.1 Overview
+
+> SIP proxies are elements that route SIP requests to user agent servers and SIP responses to user agent clients.  A request may traverse several proxies on its way to a UAS.  Each will make routing decisions, modifying the request before forwarding it to the next element.  Responses will route through the same set of proxies traversed by the request in the reverse order.
+SIP 프록시는 SIP 요청을 UAS로 라우팅하고 SIP 응답을 UAC로 라우팅하는 요소이다.  요청은 UAS로 가는 도중에 여러 프록시를 통과할 수 있다.  각 프록시는 라우팅 결정을 내리고 다음 요소로 요청을 전달하기 전에 요청을 수정한다.  응답은 역순으로 요청이 통과한 동일한 프록시 집합을 통해 라우팅된다.
+
+> Being a proxy is a logical role for a SIP element.  When a request arrives, an element that can play the role of a proxy first decides if it needs to respond to the request on its own.  For instance, the request may be malformed or the element may need credentials from the client before acting as a proxy.  The element MAY respond with any appropriate error code.  When responding directly to a request, the element is playing the role of a UAS and MUST behave as described in Section 8.2.
+프록시는 SIP 요소의 논리적 역할이다.  요청이 도착하면 프록시 역할을 수행할 수 있는 요소는 먼저 자체적으로 요청에 응답해야 하는지 여부를 결정한다.  예를 들어 요청이 잘못되었거나 요소가 프록시로 작동하기 전에 클라이언트의 자격 증명이 필요할 수 있다.  요소는 적절한 오류 코드와 함께 응답할 수 있다.  요청에 직접 응답하는 경우 요소는 UAS의 역할을 수행하며 섹션 8.2에 설명된 대로 작동해야 한다.
+
+> A proxy can operate in either a stateful or stateless mode for each new request.  When stateless, a proxy acts as a simple forwarding element.  It forwards each request downstream to a single element determined by making a targeting and routing decision based on the request.  It simply forwards every response it receives upstream.  A stateless proxy discards information about a message once the message has been forwarded.  A stateful proxy remembers information (specifically, transaction state) about each incoming request and any requests it sends as a result of processing the incoming request.  It uses this information to affect the processing of future messages associated with that request.  A stateful proxy MAY choose to "fork" a request, routing it to multiple destinations.  Any request that is forwarded to more than one location MUST be handled statefully.
+프록시는 각각의 새 요청에 대해 stateful 또는 stateless 모드로 작동할 수 있다.  stateless 모드에서 프록시는 단순한 포워딩 요소 역할을 한다.  프록시는 각 요청을 요청에 따라 타겟팅 및 라우팅을 결정하여 결정된 단일 요소로 다운스트림으로 전달한다.  프록시는 업스트림에서 수신하는 모든 응답을 단순히 전달한다.  stateless 프록시는 메시지가 전달되면 메시지에 대한 정보를 삭제한다.  stateful 프록시는 들어오는 각 요청에 대한 정보(특히 트랜잭션 상태)와 들어오는 요청을 처리한 결과로 보내는 모든 요청을 기억한다.  이 정보를 사용하여 해당 요청과 관련된 향후 메시지 처리에 영향을 준다.  stateful 프록시는 요청을 'fork'하여 여러 대상에 라우팅할 수 있다.  둘 이상의 위치로 전달되는 모든 요청은 반드시 stateful 방식으로 처리되어야 한다.
+
+> In some circumstances, a proxy MAY forward requests using stateful transports (such as TCP) without being transaction-stateful.  For instance, a proxy MAY forward a request from one TCP connection to another transaction statelessly as long as it places enough information in the message to be able to forward the response down the same connection the request arrived on.  Requests forwarded between different types of transports where the proxy's TU must take an active role in ensuring reliable delivery on one of the transports MUST be forwarded transaction statefully.
+일부 상황에서는 프록시가 트랜잭션 상태 저장 없이 상태 저장 전송(예: TCP)을 사용하여 요청을 전달할 수 있다.  예를 들어, 프록시는 요청이 도착한 동일한 연결로 응답을 전달할 수 있을 만큼 충분한 정보를 메시지에 넣는다면 한 TCP 연결에서 다른 트랜잭션으로 요청을 stateless 방식으로 전달할 수 있다.  프록시의 TU가 전송 중 하나에서 안정적인 전송을 보장하기 위해 적극적인 역할을 수행해야 하는 서로 다른 유형의 전송 간에 전달되는 요청은 반드시 트랜잭션을 stateful로 전달해야 한다.
+
+> A stateful proxy MAY transition to stateless operation at any time during the processing of a request, so long as it did not do anything that would otherwise prevent it from being stateless initially (forking, for example, or generation of a 100 response).  When performing such a transition, all state is simply discarded.  The proxy SHOULD NOT initiate a CANCEL request.
+stateful 프록시는 처음에 stateless 프록시가 되지 못하게 하는 행위(예: fork 또는 100 응답 생성)를 하지 않는 한 요청을 처리하는 동안 언제든지 stateful 프록시가 stateless작업으로 전환할 수 있다.  이러한 전환을 수행할 때 모든 상태는 단순히 버려진다.  프록시는 CANCEL 요청을 초기화해서는 안 된다.
+
+> Much of the processing involved when acting statelessly or statefully for a request is identical.  The next several subsections are written from the point of view of a stateful proxy.  The last section calls out those places where a stateless proxy behaves differently.
+요청에 대해 stateless 또는 stateful 방식으로 처리할 때 관련된 대부분의 처리는 동일하다.  다음 몇 개의 하위 섹션은 stateful 프록시의 관점에서 작성되었다.  마지막 섹션에서는 stateless 프록시가 다르게 동작하는 곳을 설명한다.
+
+
+16.2 Stateful Proxy
+
+> When stateful, a proxy is purely a SIP transaction processing engine. Its behavior is modeled here in terms of the server and client transactions defined in Section 17.  A stateful proxy has a server transaction associated with one or more client transactions by a higher layer proxy processing component (see figure 3), known as a proxy core.  An incoming request is processed by a server transaction.  Requests from the server transaction are passed to a proxy core.  The proxy core determines where to route the request, choosing one or more next-hop locations.  An outgoing request for each next-hop location is processed by its own associated client transaction.  The proxy core collects the responses from the client transactions and uses them to send responses to the server transaction.
+stateful 시 프록시는 순전히 SIP 트랜잭션 처리 엔진이다. 그 동작은 섹션 17에 정의된 서버 및 클라이언트 트랜잭션의 관점에서 모델링된다.  stateful 프록시에는 프록시 코어라고 하는 상위 계층 프록시 처리 구성 요소(그림 3 참조)에 의해 하나 이상의 클라이언트 트랜잭션과 연결된 서버 트랜잭션이 있다.  들어오는 요청은 서버 트랜잭션에 의해 처리된다.  서버 트랜잭션의 요청은 프록시 코어로 전달된다.  프록시 코어는 하나 이상의 다음 홉 위치를 선택하여 요청을 라우팅할 위치를 결정한다.  각 넥스트 홉 위치에 대한 발신 요청은 자체적으로 연결된 클라이언트 트랜잭션에 의해 처리된다.  프록시 코어는 클라이언트 트랜잭션에서 응답을 수집하고 이를 사용하여 서버 트랜잭션에 응답을 보낸다.
+
+> A stateful proxy creates a new server transaction for each new request received.  Any retransmissions of the request will then be handled by that server transaction per Section 17.  The proxy core MUST behave as a UAS with respect to sending an immediate provisional on that server transaction (such as 100 Trying) as described in Section 8.2.6.  Thus, a stateful proxy SHOULD NOT generate 100 (Trying) responses to non-INVITE requests.
+stateful 프록시는 새로운 요청이 수신될 때마다 새 서버 트랜잭션을 생성한다.  그런 다음 요청의 재전송은 섹션 17에 따라 해당 서버 트랜잭션에 의해 처리된다.  프록시 코어는 섹션 8.2.6에 설명된 대로 해당 서버 트랜잭션에 대한 즉각적인 잠정(예: 100 시도 중)을 보내는 것과 관련하여 UAS처럼 작동해야 한다.  따라서 stateful 프록시는 non-INVITE 요청에 대해 100 (Triying) 응답을 생성해서는 안 된다.
+
+> This is a model of proxy behavior, not of software.  An implementation is free to take any approach that replicates the external behavior this model defines.
+이(stateful) 모델은 소프트웨어가 아닌 프록시 동작에 대한 모델이다.  구현은 이 모델이 정의하는 외부 동작을 복제하는 모든 접근 방식을 자유롭게 취할 수 있다.
+
+> For all new requests, including any with unknown methods, an element intending to proxy the request MUST:
+알 수 없는 메소드를 사용하는 요청을 포함한 모든 새 요청의 경우, 요청을 프록시하려는 요소는 반드시 요청을 프록시해야 합니다:
+
+	1. Validate the request (Section 16.3)
+
+	2. Preprocess routing information (Section 16.4)
+
+	3. Determine target(s) for the request (Section 16.5)
+	
+	4. Forward the request to each target (Section 16.6)
+
+	5. Process all responses (Section 16.7)
+	
+
+16.3 Request Validation
+
+> Before an element can proxy a request, it MUST verify the message's validity.  A valid message must pass the following checks:
+한 요소가 요청을 프록시하기 전에 메시지의 유효성을 확인해야 한다.  유효한 메시지는 다음 검사를 통과해야 한다:
+
+	1. Reasonable Syntax
+	
+	2. URI scheme
+	
+	3. Max-Forwards
+	
+	4. (Optional) Loop Detection
+	
+	5. Proxy-Require
+	
+	6. Proxy-Authorization
+	
+> If any of these checks fail, the element MUST behave as a user agent server (see Section 8.2) and respond with an error code.
+이러한 검사 중 하나라도 실패하면, 요소는 UAS로 작동해야 하며(섹션 8.2 참조) 오류 코드와 함께 응답해야 한다.
+
+> Notice that a proxy is not required to detect merged requests and MUST NOT treat merged requests as an error condition.  The endpoints receiving the requests will resolve the merge as described in Section 8.2.2.2.
+병합된 요청을 감지하기 위해 프록시가 필요하지 않으며 병합된 요청을 오류 조건으로 처리해서는 안 된다.  요청을 수신하는 엔드포인트는 섹션 8.2.2.2에 설명된 대로 병합을 해결한다.
+
+[1]  Reasonable syntax check
+>	The request MUST be well-formed enough to be handled with a server transaction.  Any components involved in the remainder of these Request Validation steps or the Request Forwarding section MUST be well-formed.  Any other components, well-formed or not, SHOULD be ignored and remain unchanged when the message is forwarded.  For instance, an element would not reject a request because of a malformed Date header field.  Likewise, a proxy would not remove a malformed Date header field before forwarding a request.
+	요청은 서버 트랜잭션으로 처리할 수 있을 만큼 잘 형성된 형식이어야 한다.  나머지 요청 유효성 검사 단계 또는 요청 전달 섹션에 관련된 모든 구성 요소는 반드시 올바르게 형성되어야 한다.  다른 구성 요소는 잘 형성되었든 그렇지 않든 간에 무시되어야 하며 메시지가 전달될 때 변경되지 않은 상태로 유지되어야 한다.  예를 들어, 요소는 잘못된 날짜 헤더 필드를 이유로 요청을 거부하지 않는다.  마찬가지로 프록시도 요청을 전달하기 전에 잘못된 날짜 헤더 필드를 제거하지 않는다.
+	
+>	This protocol is designed to be extended.  Future extensions may define new methods and header fields at any time.  An element MUST NOT refuse to proxy a request because it contains a method or header field it does not know about.
+	이 프로토콜은 확장 가능하도록 설계되었다.  향후 확장은 언제든지 새로운 메소드와 헤더 필드를 정의할 수 있다.  엘리먼트는 자신이 모르는 메서드나 헤더 필드가 포함되어 있다는 이유로 요청을 프록시하는 것을 거부해서는 안 된다.
+	
+	
+[2] URI scheme check
+>	If the Request-URI has a URI whose scheme is not understood by the proxy, the proxy SHOULD reject the request with a 416 (Unsupported URI Scheme) response.
+	Request-URI에 프록시가 이해할 수 없는 스키마가 있는 URI가 있는 경우 프록시는 416(Unsupported URI Scheme) 응답으로 요청을 거부해야 한다.
+	
+	
+[3] Max-Forwards
+>	The Max-Forwards header field (Section 20.22) is used to limit the number of elements a SIP request can traverse.
+	Max-Forwards 헤더 필드(섹션 20.22)는 SIP 요청이 트래버스할 수 있는 요소의 수를 제한하는 데 사용된다.
+	
+>	If the request does not contain a Max-Forwards header field, this check is passed.
+	요청에 Max-Forwards 헤더 필드가 포함되어 있지 않으면 이 검사는 통과된다.
+	
+>	If the request contains a Max-Forwards header field with a field value greater than zero, the check is passed.
+	요청에 필드 값이 0보다 큰 Max-Forwards 헤더 필드가 포함되어 있으면 검사가 통과된다.
+	
+>	If the request contains a Max-Forwards header field with a field value of zero (0), the element MUST NOT forward the request.  If the request was for OPTIONS, the element MAY act as the final recipient and respond per Section 11.  Otherwise, the element MUST return a 483 (Too many hops) response.
+	요청에 필드 값이 0인 Max-Forwards 헤더 필드가 포함된 경우 요소는 요청을 전달하지 않아야 한다.  요청이 옵션에 대한 요청인 경우 요소는 최종 수신자 역할을 하며 섹션 11에 따라 응답할 수 있다.  그렇지 않으면 요소는 483(Too many hops) 응답을 반환해야 한다.
+	
+	
+[4] Optional Loop Detection check
+> 	An element MAY check for forwarding loops before forwarding a request.  If the request contains a Via header field with a sent- by value that equals a value placed into previous requests by the proxy, the request has been forwarded by this element before.  The request has either looped or is legitimately spiraling through the element.  To determine if the request has looped, the element MAY perform the branch parameter calculation described in Step 8 of Section 16.6 on this message and compare it to the parameter received in that Via header field.  If the parameters match, the request has looped.  If they differ, the request is spiraling, and processing continues.  If a loop is detected, the element MAY return a 482 (Loop Detected) response.
+	요소는 요청을 전달하기 전에 전달 루프를 확인할 수 있다.  요청에 프록시가 이전 요청에 넣은 값과 동일한 보낸 사람 값이 있는 Via 헤더 필드가 포함되어 있으면 요청이 이전에 이 요소에 의해 전달된 것이다.  요청이 루프되었거나 해당 요소를 통해 합법적으로 나선형으로 진행되고 있는 것이다.  요청이 반복되었는지 확인하기 위해 요소는 이 메시지에서 섹션 16.6의 8단계에 설명된 분기 매개변수 계산을 수행하여 해당 Via 헤더 필드에 수신된 매개변수와 비교할 수 있다.  매개변수가 일치하면 요청이 루핑된 것이다.  다르면 요청이 나선형이며 처리가 계속된다.  루프가 감지되면 요소는 482(Loop Detected) 응답을 반환할 수 있다.
+
+	
+[5] Proxy-Require check
+>	Future extensions to this protocol may introduce features that require special handling by proxies.  Endpoints will include a Proxy-Require header field in requests that use these features, telling the proxy not to process the request unless the feature is understood.
+	향후 이 프로토콜의 확장으로 프록시에서 특별한 처리가 필요한 기능이 도입될 수 있다.  엔드포인트는 이러한 기능을 사용하는 요청에 Proxy-Require 헤더 필드를 포함시켜 해당 기능을 이해하지 못하면 요청을 처리하지 않도록 프록시에 알린다.
+	
+>	If the request contains a Proxy-Require header field (Section 20.29) with one or more option-tags this element does not understand, the element MUST return a 420 (Bad Extension) response.  The response MUST include an Unsupported (Section 20.40) header field listing those option-tags the element did not understand.
+	요청에 이 요소가 이해하지 못하는 하나 이상의 옵션 태그가 있는 Proxy-Require 헤더 필드(섹션 20.29)가 포함된 경우 요소는 반드시 420(Bad Extension) 응답을 반환해야 한다.  응답에는 요소에서 이해하지 못하는 옵션 태그를 나열하는 Unsupported(섹션 20.40) 헤더 필드가 포함되어야 한다.
+	
+
+[6] Proxy-Authorization check
+>	If an element requires credentials before forwarding a request, the request MUST be inspected as described in Section 22.3.  That section also defines what the element must do if the inspection fails.
+	요소가 요청을 전달하기 전에 자격 증명을 요구하는 경우, 섹션 22.3에 설명된 대로 요청을 검사해야 한다.  해당 섹션에서는 검사에 실패한 경우 요소가 수행해야 하는 작업도 정의한다.
+	
+
+16.4 Route information Preprocessing
+
+> The proxy MUST inspect the Request-URI of the request.  If the Request-URI of the request contains a value this proxy previously placed into a Record-Route header field (see Section 16.6 item 4), the proxy MUST replace the Request-URI in the request with the last value from the Route header field, and remove that value from the Route header field.  The proxy MUST then proceed as if it received this modified request.
+프록시는 요청의 Request-URI를 검사해야 한다.  요청의 Request-URI에 프록시가 이전에 Record-Route 헤더 필드에 입력한 값이 포함된 경우(섹션 16.6 항목 4 참조), 프록시는 요청의 Request-URI를 Route 헤더 필드의 마지막 값으로 바꾸고 Route 헤더 필드에서 해당 값을 제거해야 한다.  그런 다음 프록시는 이 수정된 요청을 받은 것처럼 진행해야 한다.
+
+>	This will only happen when the element sending the request to the proxy (which may have been an endpoint) is a strict router.  This rewrite on receive is necessary to enable backwards compatibility with those elements.  It also allows elements following this specification to preserve the Request-URI through strict-routing proxies (see Section 12.2.1.1).
+	이는 프록시로 요청을 보내는 요소(엔드포인트일 수 있음)가 엄격한 라우터인 경우에만 발생한다.  이러한 수신 시 재작성은 해당 요소와의 하위 호환성을 활성화하는 데 필요한다.  또한 이 사양을 따르는 요소는 엄격한 라우팅 프록시를 통해 Request-URI를 보존할 수 있다(섹션 12.2.1.1 참조).
+	
+>	This requirement does not obligate a proxy to keep state in order to detect URIs it previously placed in Record-Route header fields. Instead, a proxy need only place enough information in those URIs to recognize them as values it provided when they later appear.
+	이 요구 사항은 프록시가 이전에 Record-Route 헤더 필드에 배치한 URI를 감지하기 위해 상태를 유지해야 할 의무를 부과하지 않는다. 대신 프록시는 해당 URI가 나중에 표시될 때 제공한 값으로 인식할 수 있을 만큼의 정보만 해당 URI에 배치하면 된다.
+	
+> If the Request-URI contains a maddr parameter, the proxy MUST check to see if its value is in the set of addresses or domains the proxy is configured to be responsible for.  If the Request-URI has a maddr parameter with a value the proxy is responsible for, and the request was received using the port and transport indicated (explicitly or by default) in the Request-URI, the proxy MUST strip the maddr and any non-default port or transport parameter and continue processing as if those values had not been present in the request.
+Request-URI에 maddr 매개변수가 포함된 경우 프록시는 해당 값이 프록시가 책임지도록 구성된 주소 또는 도메인 집합에 있는지 확인해야 한다.  Request-URI에 프록시가 담당하는 값이 있는 maddr 매개변수가 있고 Request-URI에 명시적으로 또는 기본적으로 지정된 포트 및 전송을 사용하여 요청이 수신된 경우 프록시는 maddr 및 기본값이 아닌 포트 또는 전송 매개변수를 제거하고 해당 값이 요청에 없는 것처럼 처리를 계속해야 한다.
+
+>	A request may arrive with a maddr matching the proxy, but on a port or transport different from that indicated in the URI.  Such a request needs to be forwarded to the proxy using the indicated port and transport.
+	요청은 프록시와 일치하는 maddr가 있지만 URI에 표시된 것과 다른 포트나 전송을 통해 도착할 수 있다.  이러한 요청은 표시된 포트와 전송을 사용하여 프록시로 전달해야 한다.
+	
+> If the first value in the Route header field indicates this proxy, the proxy MUST remove that value from the request.
+Route 헤더 필드의 첫 번째 값이 이 프록시를 가리키는 경우 프록시는 요청에서 해당 값을 제거해야 한다.
+
+
+16.5 Determining Request Targets
+
+> Next, the proxy calculates the target(s) of the request.  The set of targets will either be predetermined by the contents of the request or will be obtained from an abstract location service.  Each target in the set is represented as a URI.
+다음으로 프록시는 요청의 대상을 계산한다.  대상 집합은 요청의 내용에 따라 미리 결정되거나 추상적인 위치 서비스에서 가져온다.  집합의 각 대상은 URI로 표시된다.
+
+> If the Request-URI of the request contains an maddr parameter, the Request-URI MUST be placed into the target set as the only target URI, and the proxy MUST proceed to Section 16.6.
+요청의 Request-URI에 maddr 매개변수가 포함되어 있는 경우, Request-URI는 유일한 대상 URI로 설정된 대상에 배치되어야 하며 프록시는 섹션 16.6으로 진행해야 한다.
+
+> If the domain of the Request-URI indicates a domain this element is not responsible for, the Request-URI MUST be placed into the target set as the only target, and the element MUST proceed to the task of Request Forwarding (Section 16.6).
+Request-URI의 도메인이 이 요소가 책임지지 않는 도메인을 나타내는 경우, Request-URI는 설정된 타겟에 유일한 타겟으로 배치되어야 하며, 요소는 요청 전달 작업을 진행해야 한다(섹션 16.6).
+
+>	There are many circumstances in which a proxy might receive a request for a domain it is not responsible for.  A firewall proxy handling outgoing calls (the way HTTP proxies handle outgoing requests) is an example of where this is likely to occur.
+	프록시가 책임지지 않는 도메인에 대한 요청을 받을 수 있는 상황은 여러 가지가 있다.  발신 호출을 처리하는 방화벽 프록시(HTTP 프록시가 발신 요청을 처리하는 방식)가 이러한 상황이 발생할 수 있는 대표적인 예다.
+	
+> If the target set for the request has not been predetermined as described above, this implies that the element is responsible for the domain in the Request-URI, and the element MAY use whatever mechanism it desires to determine where to send the request.  Any of these mechanisms can be modeled as accessing an abstract Location Service. This may consist of obtaining information from a location service created by a SIP Registrar, reading a database, consulting a presence server, utilizing other protocols, or simply performing an algorithmic substitution on the Request-URI.  When accessing the location service constructed by a registrar, the Request-URI MUST first be canonicalized as described in Section 10.3 before being used as an index.  The output of these mechanisms is used to construct the target set.
+요청에 대한 대상 설정이 위에서 설명한 대로 미리 결정되지 않은 경우, 이는 해당 요소가 Request-URI의 도메인에 대한 책임이 있으며 요청을 전송할 위치를 결정하기 위해 원하는 메커니즘을 사용할 수 있음을 의미한다.  이러한 메커니즘은 추상적인 위치 서비스에 액세스하는 것으로 모델링할 수 있다. 이는 SIP Registrar이 만든 위치 서비스에서 정보를 얻거나, 데이터베이스를 읽거나, 프레즌스 서버를 참조하거나, 다른 프로토콜을 활용하거나, 단순히 Request-URI에서 알고리즘 치환을 수행하는 것으로 구성될 수 있다.  Registrar가 구축한 위치 서비스에 액세스할 때는 인덱스으로 사용하기 전에 섹션 10.3에 설명된 대로 Request-URI를 먼저 표준화해야 한다.  이러한 메커니즘의 출력은 대상 집합을 구성하는 데 사용된다.
+
+> If the Request-URI does not provide sufficient information for the proxy to determine the target set, it SHOULD return a 485 (Ambiguous) response.  This response SHOULD contain a Contact header field containing URIs of new addresses to be tried.  For example, an INVITE to sip:John.Smith@company.com may be ambiguous at a proxy whose location service has multiple John Smiths listed.  See Section 21.4.23 for details.
+Request-URI가 프록시가 대상 집합을 결정하는 데 충분한 정보를 제공하지 않는 경우 485(Ambiguous) 응답을 반환해야 한다.  이 응답에는 시도할 새 주소의 URI가 포함된 Contact 헤더 필드가 포함되어야 한다.  예를 들어, 위치 서비스에 여러 명의 존 스미스가 나열된 프록시에서는 sip:John.Smith@company.com 로의 INVITE가 모호할 수 있다.  자세한 내용은 섹션 21.4.23을 참조하라.
+
+> Any information in or about the request or the current environment of the element MAY be used in the construction of the target set.  For instance, different sets may be constructed depending on contents or the presence of header fields and bodies, the time of day of the request's arrival, the interface on which the request arrived, failure of previous requests, or even the element's current level of utilization.
+요청 또는 요소의 현재 환경에 관한 모든 정보는 대상 집합을 구성하는 데 사용될 수 있다.  예를 들어, contents 또는 헤더 필드 및 body의 존재 여부, 요청이 도착한 시간, 요청이 도착한 인터페이스, 이전 요청의 실패 또는 요소의 현재 사용률 수준에 따라 다른 세트가 구성될 수 있다.
+
+> As potential targets are located through these services, their URIs are added to the target set.  Targets can only be placed in the target set once.  If a target URI is already present in the set (based on the definition of equality for the URI type), it MUST NOT be added again.
+이러한 서비스를 통해 잠재적 타겟을 찾으면 해당 URI가 타겟 세트에 추가된다.  타깃은 타깃 세트에 한 번만 배치할 수 있다.  대상 URI가 이미 세트에 있는 경우(URI 유형에 대한 동일성 정의에 따라) 다시 추가해서는 안 된다.
+
+> A proxy MUST NOT add additional targets to the target set if the Request-URI of the original request does not indicate a resource this proxy is responsible for.
+프록시는 원본 요청의 Request-URI가 이 프록시가 담당하는 리소스를 나타내지 않는 경우 대상 집합에 추가 대상을 추가해서는 안 된다.
+
+>	A proxy can only change the Request-URI of a request during forwarding if it is responsible for that URI.  If the proxy is not responsible for that URI, it will not recurse on 3xx or 416 responses as described below.
+	프록시는 해당 URI에 대한 책임이 있는 경우에만 전달 중에 요청의 Request-URI를 변경할 수 있다.  프록시가 해당 URI에 대한 책임이 없는 경우 아래에 설명된 대로 3xx 또는 416 응답에 대해 재귀하지 않는다.
+	
+> If the Request-URI of the original request indicates a resource this proxy is responsible for, the proxy MAY continue to add targets to the set after beginning Request Forwarding.  It MAY use any information obtained during that processing to determine new targets. For instance, a proxy may choose to incorporate contacts obtained in a redirect response (3xx) into the target set.  If a proxy uses a dynamic source of information while building the target set (for instance, if it consults a SIP Registrar), it SHOULD monitor that source for the duration of processing the request.  New locations SHOULD be added to the target set as they become available.  As above, any given URI MUST NOT be added to the set more than once.
+원본 요청의 Request-URI가 이 프록시가 담당하는 리소스를 가리키는 경우 프록시는 요청 전달을 시작한 후에도 세트에 대상을 계속 추가할 수 있다.  프록시는 해당 처리 중에 얻은 정보를 사용하여 새 대상을 결정할 수 있다. 예를 들어 프록시는 리디렉션 응답(3xx)에서 얻은 연락처를 대상 집합에 통합하도록 선택할 수 있다.  프록시가 대상 집합을 구축하는 동안 동적 정보 소스를 사용하는 경우(예: SIP 등록기관에 문의하는 경우) 요청을 처리하는 동안 해당 소스를 모니터링해야 한다.  새로운 위치를 사용할 수 있게 되면 대상 세트에 추가해야 한다.  위와 같이 특정 URI를 세트에 두 번 이상 추가해서는 안 된다.
+
+>	Allowing a URI to be added to the set only once reduces unnecessary network traffic, and in the case of incorporating contacts from redirect requests prevents infinite recursion.
+	URI를 세트에 한 번만 추가할 수 있도록 허용하면 불필요한 네트워크 트래픽이 줄어들고 리디렉션 요청에서 연락처를 통합하는 경우 무한 재귀를 방지할 수 있다.
+	
+> For example, a trivial location service is a "no-op", where the target URI is equal to the incoming request URI.  The request is sent to a specific next hop proxy for further processing.  During request forwarding of Section 16.6, Item 6, the identity of that next hop, expressed as a SIP or SIPS URI, is inserted as the top-most Route header field value into the request.
+예를 들어, 사소한 위치 서비스는 대상 URI가 들어오는 요청 URI와 동일한 'no-op'이다.  요청은 추가 처리를 위해 특정 다음 홉 프록시로 전송된다.  섹션 16.6, 항목 6의 요청 전달 중에 해당 다음 홉의 ID(SIP 또는 SIPS URI로 표현됨)가 요청의 최상위 Route 헤더 필드 값으로 삽입된다.
+
+> If the Request-URI indicates a resource at this proxy that does not exist, the proxy MUST return a 404 (Not Found) response.
+요청 URL이 이 프록시에 존재하지 않는 리소스를 가리키는 경우 프록시는 404(Not Found) 응답을 반환해야 한다.
+
+> If the target set remains empty after applying all of the above, the proxy MUST return an error response, which SHOULD be the 480 (Temporarily Unavailable) response.
+위의 모든 사항을 적용한 후에도 대상 집합이 비어 있으면 프록시는 반드시 오류 응답을 반환해야 하며, 이 응답은 480(Temporarily Unavailable) 응답이어야 한다.
+
+
+16.6 Request Forwarding
+
+> As soon as the target set is non-empty, a proxy MAY begin forwarding the request.  A stateful proxy MAY process the set in any order.  It MAY process multiple targets serially, allowing each client transaction to complete before starting the next.  It MAY start client transactions with every target in parallel.  It also MAY arbitrarily divide the set into groups, processing the groups serially and processing the targets in each group in parallel.
+대상 집합이 비어 있지 않으면 프록시가 요청을 전달하기 시작할 수 있다.  stateful 프록시는 어떤 순서로든 세트를 처리할 수 있다.  여러 대상을 순차적으로 처리하여 각 클라이언트 트랜잭션이 다음 트랜잭션을 시작하기 전에 완료되도록 할 수 있다.  모든 대상과 클라이언트 트랜잭션을 병렬로 시작할 수도 있습니다.  또한 임의로 집합을 그룹으로 나누어 그룹을 순차적으로 처리하고 각 그룹의 대상을 병렬로 처리할 수도 있다.
+
+> A common ordering mechanism is to use the qvalue parameter of targets obtained from Contact header fields (see Section 20.10).  Targets are processed from highest qvalue to lowest.  Targets with equal qvalues may be processed in parallel.
+일반적인 순서 지정 메커니즘은 연락처 헤더 필드에서 얻은 대상의 qvalue 매개변수를 사용하는 것이다(섹션 20.10 참조).  대상은 가장 높은 qvalue 값부터 가장 낮은 값까지 처리된다.  q값이 동일한 대상은 병렬로 처리될 수 있다.
+
+> A stateful proxy must have a mechanism to maintain the target set as responses are received and associate the responses to each forwarded request with the original request.  For the purposes of this model, this mechanism is a "response context" created by the proxy layer before forwarding the first request.
+stateful 프록시에는 응답이 수신될 때 대상 집합을 유지하고 전달된 각 요청에 대한 응답을 원래 요청과 연결하는 메커니즘이 있어야 한다.  이 모델의 목적상 이 메커니즘은 첫 번째 요청을 전달하기 전에 프록시 계층에서 생성하는 "response context"이다.
+
+> For each target, the proxy forwards the request following these steps:
+각 대상에 대해 프록시는 다음 단계에 따라 요청을 전달한다:
+
+	1.  Make a copy of the received request
+	
+	2.  Update the Request-URI
+	
+	3.  Update the Max-Forwards header field
+	
+	4.  Optionally add a Record-route header field value
+	
+	5.  Optionally add additional header fields
+	
+	6.  Postprocess routing information
+	
+	7.  Determine the next-hop address, port, and transport
+	
+	8.  Add a Via header field value
+	
+	9.  Add a Content-Length header field if necessary
+	
+	10. Forward the new request
+	
+	11. Set timer C
+	
+Each of these steps is detailed below:
+
+[1] Copy request
+>	The proxy starts with a copy of the received request.  The copy MUST initially contain all of the header fields from the received request.  Fields not detailed in the processing described below MUST NOT be removed.  The copy SHOULD maintain the ordering of the header fields as in the received request. The proxy MUST NOT reorder field values with a common field name (See Section 7.3.1).  The proxy MUST NOT add to, modify, or remove the message body.
+	프록시는 수신된 요청의 복사본으로 시작한다.  복사본에는 수신된 요청의 모든 헤더 필드가 처음에 포함되어야 한다.  아래에 설명된 처리에서 자세히 설명되지 않은 필드는 제거해서는 안 된다.  복사본은 수신된 요청에서와 같이 헤더 필드의 순서를 유지해야 한다. 프록시는 공통 필드 이름으로 필드 값을 재정렬해서는 안 된다(섹션 7.3.1 참조).  프록시는 메시지 body를 추가, 수정 또는 제거해서는 안 된다.
+	
+>	An actual implementation need not perform a copy; the primary requirement is that the processing for each next hop begin with the same request.
+	실제 구현에서는 복사본을 수행할 필요가 없으며, 각 다음 홉에 대한 처리가 동일한 요청으로 시작해야 한다는 것이 기본 요구 사항이다.
+	
+[2] Request-URI
+>	The Request-URI in the copy's start line MUST be replaced with the URI for this target.  If the URI contains any parameters not allowed in a Request-URI, they MUST be removed.
+	복사본의 시작 줄에 있는 Request-URI는 이 대상의 URI로 대체되어야 한다.  Request-URI에 허용되지 않는 매개변수가 URI에 포함되어 있는 경우 해당 매개변수를 제거해야 한다.
+	
+>	This is the essence of a proxy's role.  This is the mechanism through which a proxy routes a request toward its destination.
+	이것이 프록시 역할의 본질이다.  프록시가 요청을 목적지로 라우팅하는 메커니즘이다.
+
+>	In some circumstances, the received Request-URI is placed into the target set without being modified.  For that target, the replacement above is effectively a no-op.
+	일부 상황에서는 수신된 요청 URL이 수정되지 않고 대상 집합에 배치된다.  해당 타겟의 경우 위의 교체는 사실상 아무 작업도 수행하지 않는다.
+	
+[3] Max-Forwards
+>	If the copy contains a Max-Forwards header field, the proxy MUST decrement its value by one (1).
+	복사본에 Max-Forwards 헤더 필드가 포함된 경우 프록시는 해당 값을 하나(1) 줄여야 한다.
+	
+>	If the copy does not contain a Max-Forwards header field, the proxy MUST add one with a field value, which SHOULD be 70.
+	복사본에 Max-Forwards 헤더 필드가 포함되어 있지 않은 경우 프록시는 필드 값이 70이어야 하는 필드 필드를 추가해야 한다.
+	
+>	Some existing UAs will not provide a Max-Forwards header field in a request.
+	일부 기존 UA는 요청에 Max-Forwards 헤더 필드를 제공하지 않는다.
+	
+[4] Record-Route	
+> 	If this proxy wishes to remain on the path of future requests in a dialog created by this request (assuming the request creates a dialog), it MUST insert a Record-Route header field value into the copy before any existing Record-Route header field values, even if a Route header field is already present.
+	이 프록시가 이 요청에 의해 생성된 다이얼로그에서 향후 요청의 경로를 유지하려면(요청이 다이얼로그를 생성한다고 가정할 때) Route 헤더 필드가 이미 존재하더라도 기존 Record-Route 헤더 필드 값보다 먼저 복사본에 Record-Route 헤더 필드 값을 삽입해야 한다.
+	
+>	Requests establishing a dialog may contain a preloaded Route header field.
+	다이얼로그를 설정하는 요청에는 미리 로드된 Route 헤더 필드가 포함될 수 있다.
+	
+>	If this request is already part of a dialog, the proxy SHOULD insert a Record-Route header field value if it wishes to remain on the path of future requests in the dialog.  In normal endpoint operation as described in Section 12, these Record- Route header field values will not have any effect on the route sets used by the endpoints.
+	이 요청이 이미 다이얼로그의 일부인 경우 프록시는 다이얼로그에서 향후 요청의 경로를 유지하려면 Record-Route 헤더 필드 값을 삽입해야 한다.  섹션 12에 설명된 일반적인 엔드포인트 작업에서 이러한 Record-Route 헤더 필드 값은 엔드포인트에서 사용하는 route set에 영향을 미치지 않는다.
+	
+>	The proxy will remain on the path if it chooses to not insert a Record-Route header field value into requests that are already part of a dialog.  However, it would be removed from the path when an endpoint that has failed reconstitutes the dialog.
+	프록시가 이미 다이얼로그의 일부인 요청에 Record-Route 헤더 필드 값을 삽입하지 않기로 선택하면 프록시는 경로에 남아 있다.  그러나 실패한 엔드포인트가 다이얼로그를 재구성하면 경로에서 제거된다.
+	
+>	A proxy MAY insert a Record-Route header field value into any request.  If the request does not initiate a dialog, the endpoints will ignore the value.  See Section 12 for details on how endpoints use the Record-Route header field values to construct Route header fields.
+	프록시는 Record-Route 헤더 필드 값을 모든 요청에 삽입할 수 있다.  요청이 다이얼로그를 시작하지 않으면 엔드포인트는 해당 값을 무시한다.  엔드포인트가 Record-Route 헤더 필드 값을 사용하여 Route 헤더 필드를 구성하는 방법에 대한 자세한 내용은 섹션 12를 참조하라.
+	
+>	Each proxy in the path of a request chooses whether to add a Record-Route header field value independently - the presence of a Record-Route header field in a request does not obligate this proxy to add a value.
+	요청 경로에 있는 각 프록시는 Record-Route 헤더 필드 값을 추가할지 여부를 독립적으로 선택한다. 요청에 Record-Route 헤더 필드가 있다고 해서 이 프록시가 값을 추가할 의무가 있는 것은 아니다.
+	
+>	The URI placed in the Record-Route header field value MUST be a SIP or SIPS URI.  This URI MUST contain an lr parameter (see Section 19.1.1).  This URI MAY be different for each destination the request is forwarded to.  The URI SHOULD NOT contain the transport parameter unless the proxy has knowledge (such as in a private network) that the next downstream element that will be in the path of subsequent requests supports that transport.
+	Record-Route 헤더 필드 값에 배치된 URI는 반드시 SIP 또는 SIPS URI여야 한다.  이 URI에는 lr 매개변수가 포함되어야 한다(섹션 19.1.1 참조).  이 URI는 요청이 전달되는 각 대상마다 다를 수 있다.  프록시가 후속 요청 경로에 있는 다음 다운스트림 요소가 해당 전송을 지원한다는 것을 알고 있는 경우(예: 사설 네트워크)가 아니라면 URI에 전송 매개변수가 포함되어서는 안 된다.
+	
+>	The URI this proxy provides will be used by some other element to make a routing decision.  This proxy, in general, has no way of knowing the capabilities of that element, so it must restrict itself to the mandatory elements of a SIP implementation: SIP URIs and either the TCP or UDP transports.
+	이 프록시가 제공하는 URI는 다른 요소에서 라우팅 결정을 내리는 데 사용된다.  일반적으로 이 프록시는 해당 요소의 기능을 알 수 있는 방법이 없으므로 SIP 구현의 필수 요소로 제한해야 한다: SIP URI와 TCP 또는 UDP 전송 중 하나이다.	
+	
+>	The URI placed in the Record-Route header field MUST resolve to the element inserting it (or a suitable stand-in) when the server location procedures of [4] are applied to it, so that subsequent requests reach the same SIP element.  If the Request-URI contains a SIPS URI, or the topmost Route header field value (after the post processing of bullet 6) contains a SIPS URI, the URI placed into the Record-Route header field MUST be a SIPS URI.  Furthermore, if the request was not received over TLS, the proxy MUST insert a Record-Route header field.  In a similar fashion, a proxy that receives a request over TLS, but generates a request without a SIPS URI in the Request-URI or topmost Route header field value (after the post processing of bullet 6), MUST insert a Record-Route header field that is not a SIPS URI.
+	Record-Route 헤더 필드에 배치된 URI는 [4]의 서버 위치 절차가 적용될 때 이를 삽입하는 요소(또는 적절한 스탠드인)로 확인되어야 후속 요청이 동일한 SIP 요소에 도달할 수 있다.  Request-URI에 SIPS URI가 포함되어 있거나 최상위 Route 헤더 필드 값(글머리 기호 6의 사후 처리 후)에 SIPS URI가 포함되어 있는 경우, Record-Route 헤더 필드에 배치된 URI는 반드시 SIPS URI여야 한다.  또한 요청이 TLS를 통해 수신되지 않은 경우 프록시는 Record-Route 헤더 필드를 삽입해야 한다.  비슷한 방식으로, TLS를 통해 요청을 수신하지만 Request-URI 또는 최상위 Route 헤더 필드 값(글머리 기호 6의 사후 처리 후)에 SIPS URI가 없는 요청을 생성하는 프록시는 SIPS URI가 아닌 Record-Route 헤더 필드를 삽입해야 한다.
+	
+>	A proxy at a security perimeter must remain on the perimeter throughout the dialog.
+	보안 경계에 있는 프록시는 다이얼로그가 진행되는 동안 경계에 남아 있어야 한다.
+	
+>	If the URI placed in the Record-Route header field needs to be rewritten when it passes back through in a response, the URI MUST be distinct enough to locate at that time.  (The request may spiral through this proxy, resulting in more than one Record-Route header field value being added).  Item 8 of Section 16.7 recommends a mechanism to make the URI sufficiently distinct.
+	Record-Route 헤더 필드에 배치된 URI가 응답에서 다시 전달될 때 다시 작성해야 하는 경우, 해당 URI는 그 시점에 찾을 수 있을 만큼 충분히 구별되어야 한다.  (요청이 이 프록시를 통해 스파이럴되어 둘 이상의 Record-Route 헤더 필드 값이 추가될 수 있다).  섹션 16.7의 항목 8은 URI를 충분히 구별할 수 있는 메커니즘을 권장한다.
+	
+>	The proxy MAY include parameters in the Record-Route header field value.  These will be echoed in some responses to the request such as the 200 (OK) responses to INVITE.  Such parameters may be useful for keeping state in the message rather than the proxy.
+	프록시는 Record-Route 헤더 필드 값에 매개변수를 포함할 수 있다.  이러한 매개변수는 INVITE에 대한 200(OK) 응답과 같은 요청에 대한 일부 응답에 반영된다.  이러한 매개변수는 프록시가 아닌 메시지에서 상태를 유지하는 데 유용할 수 있다.
+	
+>	If a proxy needs to be in the path of any type of dialog (such as one straddling a firewall), it SHOULD add a Record-Route header field value to every request with a method it does not understand since that method may have dialog semantics.
+	프록시가 어떤 유형의 다이얼로그의 경로에 있어야 하는 경우(예: 방화벽에 걸쳐 있는 다이얼로그), 해당 메서드가 다이얼로그의 의미를 가질 수 있으므로 이해하지 못하는 메서드를 사용하는 모든 요청에 Record-Route 헤더 필드 값을 추가해야 한다.
+	
+>	The URI a proxy places into a Record-Route header field is only valid for the lifetime of any dialog created by the transaction in which it occurs.  A dialog-stateful proxy, for example, MAY refuse to accept future requests with that value in the Request-URI after the dialog has terminated.  Non-dialog- stateful proxies, of course, have no concept of when the dialog has terminated, but they MAY encode enough information in the value to compare it against the dialog identifier of future requests and MAY reject requests not matching that information. Endpoints MUST NOT use a URI obtained from a Record-Route header field outside the dialog in which it was provided.  See Section 12 for more information on an endpoint's use of Record-Route header fields.
+	프록시가 Record-Route 헤더 필드에 배치하는 URI는 해당 다이얼로그가 발생한 트랜잭션에 의해 생성된 다이얼로그의 수명 동안만 유효한다.  예를 들어, 다이얼로그 stateful 프록시는 다이얼로그가 종료된 후 Request-URI에 해당 값이 포함된 향후 요청을 수락하지 않을 수 있다.  물론 비다이얼로그형 stateful 프록시는 다이얼로그가 종료된 시점에 대한 개념이 없지만, 향후 요청의 다이얼로그 식별자와 비교할 수 있는 충분한 정보를 값에 인코딩하고 해당 정보와 일치하지 않는 요청을 거부할 수 있다. 엔드포인트는 Record-Route 헤더 필드에서 얻은 URI를 제공된 다이얼로그 외부에서 사용해서는 안 된다.  엔드포인트의 Record-Route 헤더 필드 사용에 대한 자세한 내용은 섹션 12를 참조하라.
+	
+>	Record-routing may be required by certain services where the proxy needs to observe all messages in a dialog.  However, it slows down processing and impairs scalability and thus proxies should only record-route if required for a particular service.
+	프록시가 다이얼로그의 모든 메시지를 관찰해야 하는 특정 서비스에서는 레코드 라우팅이 필요할 수 있다.  그러나 처리 속도가 느려지고 확장성이 저하되므로 프록시는 특정 서비스에 필요한 경우에만 레코드 라우팅을 수행해야 한다.
+	
+>	The Record-Route process is designed to work for any SIP request that initiates a dialog.  INVITE is the only such request in this specification, but extensions to the protocol MAY define others.
+	Record-Route 프로세스는 다이얼로그를 시작하는 모든 SIP 요청에 대해 작동하도록 설계되었다.  이 사양에서 이러한 요청은 INVITE가 유일하지만 프로토콜의 확장에 따라 다른 요청이 정의될 수 있다.
+	
+[5] Add Additional Header Fields
+>	The proxy MAY add any other appropriate header fields to the copy at this point.
+	프록시는 이 시점에서 복사본에 다른 적절한 헤더 필드를 추가할 수 있다.
+	
+[6] Postprocess routing information
+>	A proxy MAY have a local policy that mandates that a request visit a specific set of proxies before being delivered to the destination.  A proxy MUST ensure that all such proxies are loose routers.  Generally, this can only be known with certainty if the proxies are within the same administrative domain.  This set of proxies is represented by a set of URIs (each of which contains the lr parameter).  This set MUST be pushed into the Route header field of the copy ahead of any existing values, if present.  If the Route header field is absent, it MUST be added, containing that list of URIs.
+	프록시에는 요청이 목적지로 전달되기 전에 특정 프록시 집합을 방문하도록 하는 로컬 정책이 있을 수 있다.  프록시는 이러한 모든 프록시가 loose 라우터인지 확인해야 한다.  일반적으로 이는 프록시가 동일한 관리 도메인 내에 있는 경우에만 확실하게 알 수 있다.  이 프록시 집합은 URI 집합으로 표시된다(각 집합에는 lr 매개변수가 포함됨).  이 세트는 기존 값이 있는 경우 복사본의 Route 헤더 필드에 기존 값보다 먼저 푸시되어야 한다.  Route 헤더 필드가 없는 경우 해당 URI 목록을 포함하는 필드를 추가해야 한다.
+	
+>	If the proxy has a local policy that mandates that the request visit one specific proxy, an alternative to pushing a Route value into the Route header field is to bypass the forwarding logic of item 10 below, and instead just send the request to the address, port, and transport for that specific proxy.  If the request has a Route header field, this alternative MUST NOT be used unless it is known that next hop proxy is a loose router.  Otherwise, this approach MAY be used, but the Route insertion mechanism above is preferred for its robustness, flexibility, generality and consistency of operation. Furthermore, if the Request-URI contains a SIPS URI, TLS MUST be used to communicate with that proxy.
+	프록시에 요청이 특정 프록시를 방문하도록 하는 로컬 정책이 있는 경우 Route 헤더 필드에 Route 값을 푸시하는 대신 아래 항목 10의 전달 로직을 우회하는 대신 해당 특정 프록시의 주소, 포트 및 전송으로 요청을 보내는 것이 대안이 될 수 있다.  요청에 Route 헤더 필드가 있는 경우 다음 홉 프록시가 느슨한 라우터라는 것이 확인되지 않는 한 이 방법을 사용해서는 안 된다.  그렇지 않은 경우 이 접근 방식을 사용할 수 있지만 위의 경로 삽입 메커니즘은 견고성, 유연성, 일반성 및 작동의 일관성 때문에 선호된다. 또한 Request-URI에 SIPS URI가 포함된 경우 해당 프록시와 통신할 때는 반드시 TLS를 사용해야 한다.
+	
+>	If the copy contains a Route header field, the proxy MUST inspect the URI in its first value.  If that URI does not contain an lr parameter, the proxy MUST modify the copy as follows:
+	복사본에 Route 헤더 필드가 포함된 경우 프록시는 첫 번째 값의 URI를 검사해야 한다.  해당 URI에 lr 매개변수가 포함되어 있지 않은 경우 프록시는 다음과 같이 복사본을 수정해야 한다:
+	
+>		-  The proxy MUST place the Request-URI into the Route header field as the last value.
+		- 프록시는 Request-URI를 Route 헤더 필드에 마지막 값으로 배치해야 한다.
+	
+>		-  The proxy MUST then place the first Route header field value   into the Request-URI and remove that value from the Route header field.
+		- 그런 다음 프록시는 첫 번째 경로 헤더 필드 값을 Request-URI에 배치하고 경로 헤더 필드에서 해당 값을 제거해야 한다.
+		
+>	Appending the Request-URI to the Route header field is part of a mechanism used to pass the information in that Request-URI through strict-routing elements.  "Popping" the first Route header field value into the Request-URI formats the message the way a strict-routing element expects to receive it (with its own URI in the Request-URI and the next location to visit in the first Route header field value).
+	Route 헤더 필드에 Request-URI를 추가하는 것은 해당 Request-URI의 정보를 엄격한 라우팅 요소를 통해 전달하는 데 사용되는 메커니즘의 일부이다.  첫 번째 Route 헤더 필드 값을 Request-URI에 "팝핑"하면 엄격 라우팅 요소가 메시지를 수신할 것으로 예상하는 방식으로 메시지의 형식이 지정된다(요청-URI에 자체 URI가 있고 첫 번째 Route 헤더 필드 값에 방문할 다음 위치가 포함됨).
+	
+[7] Determine Next-Hop Address, Port, and Transport	
+>	The proxy MAY have a local policy to send the request to a specific IP address, port, and transport, independent of the values of the Route and Request-URI.  Such a policy MUST NOT be used if the proxy is not certain that the IP address, port, and transport correspond to a server that is a loose router. However, this mechanism for sending the request through a specific next hop is NOT RECOMMENDED; instead a Route header field should be used for that purpose as described above.
+	프록시에는 Route 및 Request-URI 값과 무관하게 특정 IP 주소, 포트 및 전송으로 요청을 보내는 로컬 정책이 있을 수 있다.  프록시가 IP 주소, 포트 및 전송이 루스 라우터인 서버에 해당하는지 확실하지 않은 경우 이러한 정책을 사용해서는 안 된다. 그러나 특정 다음 홉을 통해 요청을 전송하는 이 메커니즘은 권장되지 않으며, 대신 위에서 설명한 대로 Route 헤더 필드를 해당 용도로 사용해야 한다.
+	
+>	In the absence of such an overriding mechanism, the proxy applies the procedures listed in [4] as follows to determine where to send the request.  If the proxy has reformatted the request to send to a strict-routing element as described in step 6 above, the proxy MUST apply those procedures to the Request-URI of the request.  Otherwise, the proxy MUST apply the procedures to the first value in the Route header field, if present, else the Request-URI.  The procedures will produce an ordered set of (address, port, transport) tuples. Independently of which URI is being used as input to the procedures of [4], if the Request-URI specifies a SIPS resource, the proxy MUST follow the procedures of [4] as if the input URI were a SIPS URI.
+	이러한 재정의 메커니즘이 없는 경우 프록시는 [4]에 나열된 절차를 다음과 같이 적용하여 요청을 전송할 위치를 결정한다.  프록시가 위의 6단계에 설명된 대로 요청을 엄격한 라우팅 요소로 보내기 위해 요청의 형식을 다시 지정한 경우 프록시는 해당 절차를 요청의 Request-URI에 적용해야 한다.  그렇지 않으면 프록시는 Route 헤더 필드의 첫 번째 값(있는 경우)에 프로시저를 적용해야 하며, 그렇지 않으면 Request-URI에 프로시저를 적용해야 한다.  프로시저는 (주소, 포트, 전송) 튜플의 정렬된 집합을 생성한다. [4]의 절차에 대한 입력으로 사용되는 URI와 관계없이 Request-URI가 SIPS 리소스를 지정하는 경우 프록시는 입력 URI가 SIPS URI인 것처럼 [4]의 절차를 따라야 한다.
+	
+>	As described in [4], the proxy MUST attempt to deliver the message to the first tuple in that set, and proceed through the set in order until the delivery attempt succeeds.
+	[4]에 설명된 대로 프록시는 해당 집합의 첫 번째 튜플에 메시지 전달을 시도해야 하며, 전달 시도가 성공할 때까지 집합을 순서대로 진행해야 한다.
+	
+>	For each tuple attempted, the proxy MUST format the message as appropriate for the tuple and send the request using a new client transaction as detailed in steps 8 through 10.
+	시도되는 각 튜플에 대해 프록시는 튜플에 적합한 메시지 형식을 지정하고 8~10단계에 설명된 대로 새 클라이언트 트랜잭션을 사용하여 요청을 보내야 한다.
+	
+>	Since each attempt uses a new client transaction, it represents a new branch.  Thus, the branch parameter provided with the Via header field inserted in step 8 MUST be different for each attempt.
+	각 시도는 새 클라이언트 트랜잭션을 사용하므로 새 브랜치를 나타낸다.  따라서 8단계에서 삽입된 Via 헤더 필드에 제공된 브랜치 매개변수는 각 시도마다 달라야 한다.
+	
+>	If the client transaction reports failure to send the request or a timeout from its state machine, the proxy continues to the next address in that ordered set.  If the ordered set is exhausted, the request cannot be forwarded to this element in the target set.  The proxy does not need to place anything in the response context, but otherwise acts as if this element of the target set returned a 408 (Request Timeout) final response.
+	클라이언트 트랜잭션이 요청을 보내지 못했거나 상태 머신에서 timeout을 보고하면 프록시는 주문된 집합의 다음 주소로 계속 진행한다.  정렬된 집합이 모두 소진되면 요청은 대상 집합의 이 요소로 전달될 수 없다.  프록시는 응답 컨텍스트에 아무 것도 배치할 필요가 없지만, 그렇지 않으면 대상 집합의 이 요소가 408(Request Timeout) 최종 응답을 반환한 것처럼 작동한다.
+	
+[8] Add a Via header field value
+
+>	The proxy MUST insert a Via header field value into the copy before the existing Via header field values.  The construction of this value follows the same guidelines of Section 8.1.1.7. This implies that the proxy will compute its own branch parameter, which will be globally unique for that branch, and contain the requisite magic cookie. Note that this implies that the branch parameter will be different for different instances of a spiraled or looped request through a proxy.
+	프록시는 기존 Via 헤더 필드 값 앞에 Via 헤더 필드 값을 복사본에 삽입해야 한다.  이 값의 구성은 섹션 8.1.1.7의 동일한 지침을 따른다. 이는 프록시가 해당 브랜치에 대해 전 세계적으로 고유하고 필수 매직 쿠키를 포함하는 자체 브랜치 파라미터를 계산한다는 것을 의미한다. 이는 프록시를 통한 나선형 또는 루프 요청의 인스턴스마다 브랜치 매개변수가 달라진다는 것을 의미한다.
+	
+>	Proxies choosing to detect loops have an additional constraint in the value they use for construction of the branch parameter. A proxy choosing to detect loops SHOULD create a branch parameter separable into two parts by the implementation.  The first part MUST satisfy the constraints of Section 8.1.1.7 as described above.  The second is used to perform loop detection and distinguish loops from spirals.
+	루프를 감지하도록 선택한 프록시는 분기 매개변수 구성에 사용하는 값에 추가적인 제약이 있다. 루프를 감지하도록 선택한 프록시는 구현에 따라 두 부분으로 분리 가능한 분기 매개변수를 생성해야 한다.  첫 번째 부분은 위에서 설명한 대로 섹션 8.1.1.7의 제약 조건을 충족해야 한다.  두 번째 부분은 루프 감지를 수행하고 루프와 나선형을 구별하는 데 사용된다.
+	
+>	Loop detection is performed by verifying that, when a request returns to a proxy, those fields having an impact on the processing of the request have not changed.  The value placed in this part of the branch parameter SHOULD reflect all of those fields (including any Route, Proxy-Require and Proxy- Authorization header fields).  This is to ensure that if the request is routed back to the proxy and one of those fields changes, it is treated as a spiral and not a loop (see Section 16.3).  A common way to create this value is to compute a cryptographic hash of the To tag, From tag, Call-ID header field, the Request-URI of the request received (before translation), the topmost Via header, and the sequence number from the CSeq header field, in addition to any Proxy-Require and Proxy-Authorization header fields that may be present.  The algorithm used to compute the hash is implementation-dependent, but MD5 (RFC 1321 [35]), expressed in hexadecimal, is a reasonable choice.  (Base64 is not permissible for a token.)
+	루프 감지는 요청이 프록시로 리턴될 때 요청 처리에 영향을 미치는 필드가 변경되지 않았는지 확인하여 수행된다.  분기 매개변수의 이 부분에 배치된 값은 이러한 모든 필드(경로, Proxy-Require 및 Proxy- Authorization 헤더 필드 포함)를 반영해야 한다.  이는 요청이 프록시로 다시 라우팅되고 해당 필드 중 하나가 변경되는 경우 루프가 아닌 나선형으로 처리되도록 하기 위한 것이다(섹션 16.3 참조).  이 값을 만드는 일반적인 방법은 To 태그, From 태그, Call-ID 헤더 필드, 수신된 요청의 Request-URI(번역 전), 최상위 Via 헤더, CSeq 헤더 필드에서 시퀀스 번호의 암호화 해시를 계산하는 것 외에 있을 수 있는 Proxy-Require 및 Proxy-Authorization 헤더 필드도 계산하는 것이다.  해시 계산에 사용되는 알고리즘은 구현에 따라 다르지만 16진수로 표현되는 MD5(RFC 1321[35])가 합리적인 선택이다.  (Base64는 토큰에 허용되지 않는다.)
+	
+>	If a proxy wishes to detect loops, the "branch" parameter it supplies MUST depend on all information affecting processing of a request, including the incoming Request-URI and any header fields affecting the request's admission or routing.  This is necessary to distinguish looped requests from requests whose routing parameters have changed before returning to this server.
+	프록시가 루프를 감지하려면 프록시가 제공하는 "branch" 매개변수는 들어오는 Request-URI와 요청의 허용 또는 라우팅에 영향을 미치는 헤더 필드를 포함하여 요청 처리에 영향을 미치는 모든 정보에 의존해야 한다.  이는 이 서버로 돌아가기 전에 라우팅 매개변수가 변경된 요청과 루프 요청을 구별하는 데 필요하다.
+	
+>	The request method MUST NOT be included in the calculation of the branch parameter.  In particular, CANCEL and ACK requests (for non-2xx responses) MUST have the same branch value as the corresponding request they cancel or acknowledge.  The branch parameter is used in correlating those requests at the server handling them (see Sections 17.2.3 and 9.2).
+	요청 메서드는 분기 매개변수 계산에 포함되지 않아야 한다.  특히 CANCEL 및 ACK 요청(2xx가 아닌 응답의 경우)은 취소하거나 승인하는 해당 요청과 동일한 분기 값을 가져야 한다.  브랜치 매개변수는 요청을 처리하는 서버에서 해당 요청을 상호 연관시키는 데 사용된다(17.2.3절 및 9.2절 참조).
+	
+[9] Add a Content-Length header field if necessary
+>	If the request will be sent to the next hop using a stream-based transport and the copy contains no Content-Length header field, the proxy MUST insert one with the correct value for the body of the request (see Section 20.14).
+	요청이 스트림 기반 전송을 사용하여 다음 홉으로 전송되고 복사본에 Content-Length 헤더 필드가 없는 경우 프록시는 요청 body에 올바른 값을 가진 헤더 필드를 삽입해야 한다(섹션 20.14 참조).
+	
+[10] Forward Request
+>	A stateful proxy MUST create a new client transaction for this request as described in Section 17.1 and instructs the transaction to send the request using the address, port and transport determined in step 7.
+	stateful 프록시는 17.1절에 설명된 대로 이 요청에 대해 새 클라이언트 트랜잭션을 생성하고 7단계에서 결정된 주소, 포트 및 전송을 사용하여 요청을 전송하도록 트랜잭션에 지시해야 한다.
+	
+[11] Set timer C	
+>	In order to handle the case where an INVITE request never generates a final response, the TU uses a timer which is called timer C.  Timer C MUST be set for each client transaction when an INVITE request is proxied.  The timer MUST be larger than 3 minutes.  Section 16.7 bullet 2 discusses how this timer is updated with provisional responses, and Section 16.8 discusses processing when it fires.
+	INVITE 요청이 최종 응답을 생성하지 않는 경우를 처리하기 위해 TU는 타이머 C라는 타이머를 사용한다. 타이머 C는 INVITE 요청이 프록시될 때 각 클라이언트 트랜잭션에 대해 설정해야 한다.  타이머는 3분보다 커야 한다.  섹션 16.7 글머리 기호 2에서는 이 타이머가 임시 응답으로 업데이트되는 방법에 대해 설명하며, 섹션 16.8에서는 타이머가 실행될 때의 처리에 대해 설명한다.
+	
+
+16.7 Response Processing
+
+> When a response is received by an element, it first tries to locate a client transaction (Section 17.1.3) matching the response.  If none is found, the element MUST process the response (even if it is an informational response) as a stateless proxy (described below).  If a match is found, the response is handed to the client transaction.
+요소가 응답을 받으면 먼저 응답과 일치하는 클라이언트 트랜잭션(섹션 17.1.3)을 찾으려고 시도한다.  일치하는 트랜잭션을 찾을 수 없는 경우, 요소는 (정보성 응답일지라도) 해당 응답을 stateless 프록시로 처리해야 한다(아래 설명 참조).  일치하는 응답이 발견되면 응답이 클라이언트 트랜잭션으로 전달된다.
+
+>	Forwarding responses for which a client transaction (or more generally any knowledge of having sent an associated request) is not found improves robustness.  In particular, it ensures that "late" 2xx responses to INVITE requests are forwarded properly.
+	클라이언트 트랜잭션(또는 더 일반적으로 관련 요청을 보냈다는 지식)을 찾을 수 없는 응답을 포워딩하면 견고성이 향상된다.  특히 INVITE 요청에 대한 "late" 2xx 응답이 제대로 전달되도록 보장한다.
+	
+> As client transactions pass responses to the proxy layer, the following processing MUST take place:
+클라이언트 트랜잭션이 프록시 계층으로 응답을 전달할 때 다음 처리가 반드시 수행되어야 합니다:
+
+	1.  Find the appropriate response context
+	
+	2.  Update timer C for provisional responses
+	
+	3.  Remove the topmost Via
+	
+	4.  Add the response to the response context
+	
+	5.  Check to see if this response should be forwarded immediately
+	
+	6.  When necessary, choose the best final response from the response context
+	
+> If no final response has been forwarded after every client transaction associated with the response context has been terminated, the proxy must choose and forward the "best" response from those it has seen so far.
+응답 컨텍스트와 관련된 모든 클라이언트 트랜잭션이 종료된 후에도 최종 응답이 전달되지 않은 경우 프록시는 지금까지 본 응답 중에서 "best" 응답을 선택하여 전달해야 한다.
+
+> The following processing MUST be performed on each response that is forwarded.  It is likely that more than one response to each request will be forwarded: at least each provisional and one final response.
+전달되는 각 응답에 대해 다음 처리를 수행해야 한다.  각 요청에 대한 응답이 두 개 이상 전달될 가능성이 높다. 적어도 임시 응답과 최종 응답이 각각 하나씩 전달될 것이다.
+
+	7.  Aggregate authorization header field values if necessary
+	
+	8.  Optionally rewrite Record-Route header field values
+	
+	9.  Forward the response
+	
+	10. Generate any necessary CANCEL requests
+	
+Each of the above steps are detailed below:
+
+	1.  Find Context
+>		The proxy locates the "response context" it created before forwarding the original request using the key described in Section 16.6.  The remaining processing steps take place in this context.
+		프록시는 16.6절에 설명된 키를 사용하여 원본 요청을 전달하기 전에 생성한 '응답 컨텍스트'를 찾는다.  나머지 처리 단계는 이 컨텍스트에서 이루어진다.
+		
+	2.  Update timer C for provisional responses
+>		For an INVITE transaction, if the response is a provisional response with status codes 101 to 199 inclusive (i.e., anything but 100), the proxy MUST reset timer C for that client transaction.  The timer MAY be reset to a different value, but this value MUST be greater than 3 minutes.
+		INVITE 트랜잭션의 경우 응답이 상태 코드 101에서 199를 포함하는 임시 응답(즉, 100을 제외한 모든 응답)인 경우 프록시는 해당 클라이언트 트랜잭션의 타이머 C를 재설정해야 한다.  타이머는 다른 값으로 재설정할 수 있지만 이 값은 3분보다 커야 한다.
+		
+	3. Via
+>		The proxy removes the topmost Via header field value from the response.
+		프록시는 응답에서 최상위 Via 헤더 필드 값을 제거합니다.
+		
+>		If no Via header field values remain in the response, the response was meant for this element and MUST NOT be forwarded. The remainder of the processing described in this section is not performed on this message, the UAC processing rules described in Section 8.1.3 are followed instead (transport layer processing has already occurred).
+		응답에 Via 헤더 필드 값이 남아 있지 않은 경우 응답은 이 요소에 대한 것이므로 전달해서는 안 된다. 이 섹션에 설명된 나머지 처리는 이 메시지에 대해 수행되지 않으며 대신 섹션 8.1.3에 설명된 UAC 처리 규칙을 따른다(전송 계층 처리가 이미 수행됨).
+		
+>		This will happen, for instance, when the element generates CANCEL requests as described in Section 10.
+		예를 들어, 요소에서 섹션 10에 설명된 대로 CANCEL 요청을 생성할 때 이런 일이 발생한다.
+		
+	4. Add response to context
+>		Final responses received are stored in the response context until a final response is generated on the server transaction associated with this context.  The response may be a candidate for the best final response to be returned on that server transaction.  Information from this response may be needed in forming the best response, even if this response is not chosen.
+		수신된 최종 응답은 이 컨텍스트와 연관된 서버 트랜잭션에서 최종 응답이 생성될 때까지 응답 컨텍스트에 저장된다.  이 응답은 해당 서버 트랜잭션에서 반환될 최상의 최종 응답의 후보일 수 있다.  이 응답이 선택되지 않더라도 이 응답의 정보는 최상의 응답을 생성하는 데 필요할 수 있다.
+		
+>		If the proxy chooses to recurse on any contacts in a 3xx response by adding them to the target set, it MUST remove them from the response before adding the response to the response context.  However, a proxy SHOULD NOT recurse to a non-SIPS URI if the Request-URI of the original request was a SIPS URI.  If the proxy recurses on all of the contacts in a 3xx response, the proxy SHOULD NOT add the resulting contactless response to the response context.
+		프록시가 3xx 응답의 연락처를 대상 집합에 추가하여 재귀를 선택하면 응답 컨텍스트에 응답을 추가하기 전에 반드시 응답에서 연락처를 제거해야 한다.  그러나 프록시는 원래 요청의 Request-URI가 SIPS URI인 경우 SIPS가 아닌 URI로 재귀하지 않아야 한다.  프록시가 3xx 응답의 모든 연락처에서 재귀하는 경우 프록시는 결과 비접촉식 응답을 응답 컨텍스트에 추가해서는 안 된다.
+		
+>		Removing the contact before adding the response to the response context prevents the next element upstream from retrying a location this proxy has already attempted.
+		응답 컨텍스트에 응답을 추가하기 전에 연락처를 제거하면 업스트림의 다음 요소에서 이 프록시가 이미 시도한 위치를 다시 시도할 수 없다.
+		
+>		3xx responses may contain a mixture of SIP, SIPS, and non-SIP URIs.  A proxy may choose to recurse on the SIP and SIPS URIs and place the remainder into the response context to be returned, potentially in the final response.
+		3xx 응답에는 SIP, SIPS 및 비 SIP URI가 혼합되어 포함될 수 있다.  프록시는 SIP 및 SIPS URI를 재귀 처리하고 나머지는 반환할 응답 컨텍스트에 배치하여 최종 응답에 포함시킬 수 있다.
+		
+>		If a proxy receives a 416 (Unsupported URI Scheme) response to a request whose Request-URI scheme was not SIP, but the scheme in the original received request was SIP or SIPS (that is, the proxy changed the scheme from SIP or SIPS to something else when it proxied a request), the proxy SHOULD add a new URI to the target set.  This URI SHOULD be a SIP URI version of the non-SIP URI that was just tried.  In the case of the tel URL, this is accomplished by placing the telephone-subscriber part of the tel URL into the user part of the SIP URI, and setting the hostpart to the domain where the prior request was sent. See Section 19.1.6 for more detail on forming SIP URIs from tel URLs.
+		프록시가 Request-URI 스키마가 SIP가 아닌 요청에 대해 416(Unsupported URI Scheme) 응답을 수신하지만 원래 수신한 요청의 스키마가 SIP 또는 SIPS인 경우(즉, 프록시가 요청을 프록시할 때 스키마를 SIP 또는 SIPS에서 다른 것으로 변경한 경우) 프록시는 대상 집합에 새 URI를 추가해야 한다.  이 URI는 방금 시도한 비 SIP URI의 SIP URI 버전이어야 한다.  전화 URL의 경우, 전화 URL의 전화 가입자 부분을 SIP URI의 사용자 부분에 배치하고 호스트 부분을 이전 요청이 전송된 도메인으로 설정하면 이 작업이 수행된다. tel URL에서 SIP URI를 구성하는 방법에 대한 자세한 내용은 19.1.6 섹션을 참조하라.
+		
+>		As with a 3xx response, if a proxy "recurses" on the 416 by trying a SIP or SIPS URI instead, the 416 response SHOULD NOT be added to the response context.
+		3xx 응답과 마찬가지로 프록시가 대신 SIP 또는 SIPS URI를 시도하여 416에서 "recurses"하는 경우 416 응답을 응답 컨텍스트에 추가해서는 안 된다.
+		
+	5. Check response for  forwarding
+>		Until a final response has been sent on the server transaction, the following responses MUST be forwarded immediately:
+		서버 트랜잭션에서 최종 응답이 전송될 때까지 다음 응답은 즉시 전달되어야 한다:
+		
+		-  Any provisional response other than 100 (Trying)
+
+		-  Any 2xx response
+			
+>		If a 6xx response is received, it is not immediately forwarded, but the stateful proxy SHOULD cancel all client pending transactions as described in Section 10, and it MUST NOT create any new branches in this context.
+		6xx 응답이 수신되면 즉시 전달되지 않지만, stateful 프록시는 섹션 10에 설명된 대로 모든 클라이언트 보류 중인 트랜잭션을 취소해야 하며, 이 컨텍스트에서 새 브랜치를 생성해서는 안 된다.
+		
+>		This is a change from RFC 2543, which mandated that the proxy was to forward the 6xx response immediately.  For an INVITE transaction, this approach had the problem that a 2xx response could arrive on another branch, in which case the proxy would have to forward the 2xx The result was that the UAC could receive a 6xx response followed by a 2xx response, which should never be allowed to happen.  Under the new rules, upon receiving a 6xx, a proxy will issue a CANCEL request, which will generally result in 487 responses from all outstanding client transactions, and then at that point the 6xx is forwarded upstream.
+		이는 프록시가 6xx 응답을 즉시 전달하도록 의무화했던 RFC 2543에서 변경된 것이다.  INVITE 트랜잭션의 경우, 이 방식은 2xx 응답이 다른 브랜치에 도착할 수 있으며, 이 경우 프록시가 2xx를 전달해야 하는 문제가 있었다. 그 결과 UAC가 6xx 응답을 받은 후 2xx 응답을 받을 수 있는데, 이는 절대 허용되어서는 안 되는 일이었다.  새 규칙에서는 6xx를 수신하면 프록시가 취소 요청을 보내면 일반적으로 모든 미결 클라이언트 트랜잭션에서 487개의 응답이 발생하고, 그 시점에서 6xx가 업스트림으로 전달된다.
+		
+>		After a final response has been sent on the server transaction, the following responses MUST be forwarded immediately:
+		서버 트랜잭션에서 최종 응답이 전송된 후에는 다음 응답을 즉시 전달해야 한다:
+		
+		-  Any 2xx response to an INVITE request
+		
+>		A stateful proxy MUST NOT immediately forward any other responses.  In particular, a stateful proxy MUST NOT forward any 100 (Trying) response.  Those responses that are candidates for forwarding later as the "best" response have been gathered as described in step "Add Response to Context".
+		stateful 프록시는 다른 응답을 즉시 전달해서는 안 된다.  특히 stateful 프록시는 100(Trying) 응답을 전달해서는 안 된다.  나중에 "best" 응답으로 전달할 후보가 되는 응답은 "Add Response to Context" 단계에 설명된 대로 수집된다.
+		
+>		Any response chosen for immediate forwarding MUST be processed as described in steps "Aggregate Authorization Header Field Values" through "Record-Route".
+		즉시 전달을 위해 선택한 모든 응답은 'Aggregate Authorization Header Field Values'부터 'Record-Route' 단계에 설명된 대로 처리해야 한다.
+		
+>		This step, combined with the next, ensures that a stateful proxy will forward exactly one final response to a non-INVITE request, and either exactly one non-2xx response or one or more 2xx responses to an INVITE request.
+		이 단계는 다음 단계와 결합하여 stateful 프록시가 non-INVITE 요청에 대해서는 정확히 하나의 최종 응답을, INVITE 요청에 대해서는 정확히 하나의 non-2xx 응답 또는 하나 이상의 2xx 응답을 전달하도록 보장한다.
+		
+	6. Choosing the best response
+>		A stateful proxy MUST send a final response to a response context's server transaction if no final responses have been immediately forwarded by the above rules and all client transactions in this response context have been terminated.
+		위의 규칙에 따라 최종 응답이 즉시 전달되지 않았고 이 응답 컨텍스트의 모든 클라이언트 트랜잭션이 종료된 경우 stateful 프록시는 응답 컨텍스트의 서버 트랜잭션에 최종 응답을 보내야 한다.
+		
+>		The stateful proxy MUST choose the "best" final response among those received and stored in the response context.
+		stateful 프록시는 응답 컨텍스트에 수신 및 저장된 응답 중에서 "best" 최종 응답을 선택해야 한다.
+		
+>		If there are no final responses in the context, the proxy MUST send a 408 (Request Timeout) response to the server transaction.
+		컨텍스트에 최종 응답이 없는 경우 프록시는 서버 트랜잭션에 408(Request Timeout) 응답을 보내야 한다.
+		
+>		Otherwise, the proxy MUST forward a response from the responses stored in the response context.  It MUST choose from the 6xx class responses if any exist in the context.  If no 6xx class responses are present, the proxy SHOULD choose from the lowest response class stored in the response context.  The proxy MAY select any response within that chosen class.  The proxy SHOULD give preference to responses that provide information affecting resubmission of this request, such as 401, 407, 415, 420, and 484 if the 4xx class is chosen.
+		그렇지 않으면 프록시는 응답 컨텍스트에 저장된 응답 중에서 응답을 전달해야 한다.  프록시는 컨텍스트에 6xx 클래스 응답이 있는 경우 그 중에서 선택해야 한다.  6xx 클래스 응답이 없는 경우 프록시는 응답 컨텍스트에 저장된 가장 낮은 응답 클래스 중에서 선택해야 한다.  프록시는 선택한 클래스 내의 모든 응답을 선택할 수 있다.  프록시는 4xx 클래스를 선택한 경우 401, 407, 415, 420 및 484와 같이 이 요청의 재제출에 영향을 미치는 정보를 제공하는 응답을 우선적으로 선택해야 한다.
+		
+>		A proxy which receives a 503 (Service Unavailable) response SHOULD NOT forward it upstream unless it can determine that any subsequent requests it might proxy will also generate a 503. In other words, forwarding a 503 means that the proxy knows it cannot service any requests, not just the one for the Request- URI in the request which generated the 503.  If the only response that was received is a 503, the proxy SHOULD generate a 500 response and forward that upstream.
+		503(Service Unavailable) 응답을 수신한 프록시는 이후 프록시할 수 있는 요청도 503을 생성할 것이라고 판단할 수 있는 경우가 아니라면 업스트림으로 전달해서는 안 된다. 다시 말해, 503을 전달한다는 것은 프록시가 503을 생성한 요청의 Request-URI에 대한 요청뿐만 아니라 어떤 요청도 서비스할 수 없다는 것을 알고 있다는 것을 의미한다.  수신된 유일한 응답이 503인 경우 프록시는 500 응답을 생성하고 이를 업스트림으로 전달해야 한다.
+		
+>		The forwarded response MUST be processed as described in steps "Aggregate Authorization Header Field Values" through "Record- Route".
+		전달된 응답은 'Aggregate Authorization Header Field Values'부터 'Record- Route' 단계에 설명된 대로 처리되어야 합니다.
+		
+>		For example, if a proxy forwarded a request to 4 locations, and received 503, 407, 501, and 404 responses, it may choose to forward the 407 (Proxy Authentication Required) response.
+		예를 들어 프록시가 4곳에 요청을 전달하고 503, 407, 501, 404 응답을 받은 경우 407(Proxy Authentication Required) 응답을 전달하도록 선택할 수 있다.
+		
+>		1xx and 2xx responses may be involved in the establishment of dialogs.  When a request does not contain a To tag, the To tag in the response is used by the UAC to distinguish multiple responses to a dialog creating request.  A proxy MUST NOT insert a tag into the To header field of a 1xx or 2xx response if the request did not contain one.  A proxy MUST NOT modify the tag in the To header field of a 1xx or 2xx response.
+		1xx 및 2xx 응답이 다이얼로그 설정에 포함될 수 있다.  요청에 To 태그가 포함되지 않은 경우 응답의 To 태그는 UAC에서 다이얼로그 만들기 요청에 대한 여러 응답을 구분하는 데 사용된다.  프록시는 요청에 태그가 포함되어 있지 않은 경우 1xx 또는 2xx 응답의 To 헤더 필드에 태그를 삽입해서는 안 된다.  프록시는 1xx 또는 2xx 응답의 To 헤더 필드에 있는 태그를 수정해서는 안 된다.
+		
+>		Since a proxy may not insert a tag into the To header field of a 1xx response to a request that did not contain one, it cannot issue non-100 provisional responses on its own.  However, it can branch the request to a UAS sharing the same element as the proxy.  This UAS can return its own provisional responses, entering into an early dialog with the initiator of the request.  The UAS does not have to be a discreet process from the proxy.  It could be a virtual UAS implemented in the same code space as the proxy.
+		프록시는 태그가 포함되지 않은 요청에 대해 1xx 응답의 To 헤더 필드에 태그를 삽입할 수 없으므로 100이 아닌 임시 응답을 자체적으로 발행할 수 없다.  하지만 프록시와 동일한 요소를 공유하는 UAS로 요청을 분기할 수는 있다.  이 UAS는 자체 임시 응답을 반환하여 요청의 시작자와 초기 다이얼로그를 시작할 수 있다.  UAS는 프록시로부터 신중한 프로세스일 필요는 없다.  프록시와 동일한 코드 공간에 구현된 가상 UAS일 수도 있다.
+		
+>		3-6xx responses are delivered hop-by-hop.  When issuing a 3-6xx response, the element is effectively acting as a UAS, issuing its own response, usually based on the responses received from downstream elements.  An element SHOULD preserve the To tag when simply forwarding a 3-6xx response to a request that did not contain a To tag.
+		3-6xx 응답은 홉 단위로 전달된다.  3-6xx 응답을 발행할 때 요소는 효과적으로 UAS 역할을 하며, 일반적으로 다운스트림 요소에서 받은 응답을 기반으로 자체 응답을 발행한다.  요소는 To 태그가 포함되지 않은 요청에 대해 단순히 3-6xx 응답을 전달할 때 To 태그를 보존해야 한다.
+		
+>		A proxy MUST NOT modify the To tag in any forwarded response to a request that contains a To tag.
+		프록시는 To 태그가 포함된 요청에 대한 전달 응답에서 To 태그를 수정해서는 안 된다.
+		
+>		While it makes no difference to the upstream elements if the proxy replaced the To tag in a forwarded 3-6xx response, preserving the original tag may assist with debugging.
+		프록시가 전달된 3-6xx 응답에서 To 태그를 대체해도 업스트림 요소에는 아무런 차이가 없지만 원본 태그를 보존하면 디버깅에 도움이 될 수 있다.
+		
+>		When the proxy is aggregating information from several responses, choosing a To tag from among them is arbitrary, and generating a new To tag may make debugging easier.  This happens, for instance, when combining 401 (Unauthorized) and 407 (Proxy Authentication Required) challenges, or combining Contact values from unencrypted and unauthenticated 3xx responses.
+		프록시가 여러 응답의 정보를 집계하는 경우 그 중에서 To 태그를 선택하는 것은 임의적이며, 새 To 태그를 생성하면 디버깅이 더 쉬워질 수 있다.  예를 들어 401(Unauthorized)과 407(Proxy Authentication Required) 챌린지를 결합하거나 암호화되지 않은 응답과 인증되지 않은 3xx 응답의 연락처 값을 결합할 때 이런 일이 발생한다.
+		
+	7. Aggregate Authorization Header Field Values
+>		If the selected response is a 401 (Unauthorized) or 407 (Proxy Authentication Required), the proxy MUST collect any WWW- Authenticate and Proxy-Authenticate header field values from all other 401 (Unauthorized) and 407 (Proxy Authentication Required) responses received so far in this response context and add them to this response without modification before forwarding.  The resulting 401 (Unauthorized) or 407 (Proxy Authentication Required) response could have several WWW- Authenticate AND Proxy-Authenticate header field values.
+		선택한 응답이 401(Unauthorized) 또는 407(Proxy Authentication Required)인 경우 프록시는 이 응답 컨텍스트에서 지금까지 받은 다른 모든 401(Unauthorized) 및 407(Proxy Authentication Required) 응답에서 WWW- Authenticate 및 Proxy-Authenticate 헤더 필드 값을 수집하여 전달하기 전에 수정 없이 이 응답에 추가해야 한다.  결과 401(Unauthorized) 또는 407(Proxy Authentication Required) 응답에는 여러 개의 WWW- Authenticate 및 Proxy-Authenticate 헤더 필드 값이 포함될 수 있다.
+		
+>		This is necessary because any or all of the destinations the request was forwarded to may have requested credentials.  The client needs to receive all of those challenges and supply credentials for each of them when it retries the request. Motivation for this behavior is provided in Section 26.
+		요청이 전달된 대상 중 일부 또는 전부가 자격 증명을 요청했을 수 있으므로 이 작업이 필요하다.  클라이언트 요청을 다시 시도할 때 이러한 모든 챌린지를 수신하고 각 챌린지에 대한 자격 증명을 제공해야 한다. 이 동작에 대한 동기는 섹션 26에 나와 있다.
+		
+	8. Record-Route	
+>		If the selected response contains a Record-Route header field value originally provided by this proxy, the proxy MAY choose to rewrite the value before forwarding the response.  This allows the proxy to provide different URIs for itself to the next upstream and downstream elements.  A proxy may choose to use this mechanism for any reason.  For instance, it is useful for multi-homed hosts.
+		선택한 응답에 원래 이 프록시가 제공한 Record-Route 헤더 필드 값이 포함된 경우 프록시는 응답을 전달하기 전에 해당 값을 다시 작성하도록 선택할 수 있다.  이를 통해 프록시는 다음 업스트림 및 다운스트림 요소에 서로 다른 URI를 제공할 수 있다.  프록시는 어떤 이유로든 이 메커니즘을 사용하도록 선택할 수 있다.  예를 들어 멀티홈 호스트에 유용하다.
+		
+>		If the proxy received the request over TLS, and sent it out over a non-TLS connection, the proxy MUST rewrite the URI in the Record-Route header field to be a SIPS URI.  If the proxy received the request over a non-TLS connection, and sent it out over TLS, the proxy MUST rewrite the URI in the Record-Route header field to be a SIP URI.
+		프록시가 TLS를 통해 요청을 수신하고 TLS가 아닌 연결을 통해 보낸 경우 프록시는 Record-Route 헤더 필드에 있는 URI를 SIPS URI로 다시 작성해야 한다.  프록시가 TLS가 아닌 연결을 통해 요청을 수신하고 TLS를 통해 보낸 경우 프록시는 Record-Route 헤더 필드에 있는 URI를 SIP URI로 다시 작성해야 한다.
+		
+>		The new URI provided by the proxy MUST satisfy the same constraints on URIs placed in Record-Route header fields in requests (see Step 4 of Section 16.6) with the following modifications:
+		프록시가 제공하는 새 URI는 요청의 Record-Route 헤더 필드에 배치된 URI에 대한 동일한 제약 조건을 충족해야 하며(16.6절 4단계 참조), 다음과 같이 수정해야 한다:
+		
+>		The URI SHOULD NOT contain the transport parameter unless the proxy has knowledge that the next upstream (as opposed to downstream) element that will be in the path of subsequent requests supports that transport.
+		프록시가 후속 요청 경로에 있는 다음 업스트림(as opposed to downstream) 요소가 해당 전송을 지원한다는 사실을 알고 있는 경우가 아니라면 URI에 전송 매개변수가 포함되어서는 안 된다.
+		
+>		When a proxy does decide to modify the Record-Route header field in the response, one of the operations it performs is locating the Record-Route value that it had inserted.  If the request spiraled, and the proxy inserted a Record-Route value in each iteration of the spiral, locating the correct value in the response (which must be the proper iteration in the reverse direction) is tricky.  The rules above recommend that a proxy wishing to rewrite Record-Route header field values insert sufficiently distinct URIs into the Record-Route header field so that the right one may be selected for rewriting.  A RECOMMENDED mechanism to achieve this is for the proxy to append a unique identifier for the proxy instance to the user portion of the URI.
+		프록시가 응답에서 Record-Route 헤더 필드를 수정하기로 결정하면 프록시가 수행하는 작업 중 하나는 삽입한 Record-Route 값을 찾는 것이다.  요청이 나선형이고 프록시가 나선형의 각 반복에 Record-Route 값을 삽입한 경우 응답에서 올바른 값(역방향으로 적절한 반복이어야 함)을 찾는 것은 까다롭다.  위의 규칙에서는 Record-Route 헤더 필드 값을 다시 쓰려는 프록시가 올바른 값을 선택할 수 있도록 Record-Route 헤더 필드에 충분히 구별되는 URI를 삽입할 것을 권장한다.  이를 위해 권장되는 메커니즘은 프록시가 URI의 사용자 부분에 프록시 인스턴스에 대한 고유 식별자를 추가하는 것이다.
+		
+>		When the response arrives, the proxy modifies the first Record-Route whose identifier matches the proxy instance.  The modification results in a URI without this piece of data appended to the user portion of the URI.  Upon the next iteration, the same algorithm (find the topmost Record-Route header field value with the parameter) will correctly extract the next Record-Route header field value inserted by that proxy.
+		응답이 도착하면 프록시는 식별자가 프록시 인스턴스와 일치하는 첫 번째 Record-Route를 수정한다.  이 수정으로 인해 URI의 사용자 부분에 이 데이터가 추가되지 않은 URI가 생성된다.  다음 반복 시 동일한 알고리즘(매개변수가 있는 최상위 Record-Route 헤더 필드 값 찾기)이 해당 프록시에 의해 삽입된 다음 Record-Route 헤더 필드 값을 올바르게 추출한다.
+		
+>		Not every response to a request to which a proxy adds a Record-Route header field value will contain a Record-Route header field.  If the response does contain a Record-Route header field, it will contain the value the proxy added.
+		프록시가 Record-Route 헤더 필드 값을 추가하는 요청에 대한 모든 응답에 Record-Route 헤더 필드가 포함되는 것은 아니다.  응답에 Record-Route 헤더 필드가 포함되는 경우 프록시가 추가한 값이 포함된다.
+		
+	9. Forward response	
+>		After performing the processing described in steps "Aggregate Authorization Header Field Values" through "Record-Route", the proxy MAY perform any feature specific manipulations on the selected response.  The proxy MUST NOT add to, modify, or remove the message body.  Unless otherwise specified, the proxy MUST NOT remove any header field values other than the Via header field value discussed in Section 16.7 Item 3.  In particular, the proxy MUST NOT remove any "received" parameter it may have added to the next Via header field value while processing the request associated with this response.  The proxy MUST pass the response to the server transaction associated with the response context.  This will result in the response being sent to the location now indicated in the topmost Via header field value.  If the server transaction is no longer available to handle the transmission, the element MUST forward the response statelessly by sending it to the server transport.  The server transaction might indicate failure to send the response or signal a timeout in its state machine.  These errors would be logged for diagnostic purposes as appropriate, but the protocol requires no remedial action from the proxy.
+		"Aggregate Authorization Header Field Values"에서 "Record-Route" 단계에 설명된 처리를 수행한 후 프록시는 선택한 응답에 대해 기능별 조작을 수행할 수 있다.  프록시는 메시지 본문을 추가, 수정 또는 제거해서는 안 됩니다.  달리 명시되지 않는 한, 프록시는 섹션 16.7 항목 3에 설명된 Via 헤더 필드 값 이외의 헤더 필드 값을 제거해서는 안 된다.  특히 프록시는 이 응답과 관련된 요청을 처리하는 동안 다음 Via 헤더 필드 값에 추가했을 수 있는 "received" 매개변수를 제거해서는 안 된다.  프록시는 응답 컨텍스트와 연관된 서버 트랜잭션에 응답을 전달해야 한다.  이렇게 하면 응답이 현재 최상위 Via 헤더 필드 값에 표시된 위치로 전송된다.  서버 트랜잭션이 더 이상 전송을 처리할 수 없는 경우 요소는 응답을 서버 전송으로 전송하여 상태 비저장 방식으로 응답을 전달해야 한다.  서버 트랜잭션은 응답을 전송하지 못했음을 나타내거나 상태 머신에서 시간 초과를 알릴 수 있다.  이러한 오류는 진단 목적으로 적절히 기록되지만 프로토콜은 프록시에서 해결 조치를 취할 필요가 없다.
+		
+		
