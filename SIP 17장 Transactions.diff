@@ -1,0 +1,473 @@
+17. Transactions
+
+> SIP is a transactional protocol: interactions between components take place in a series of independent message exchanges.  Specifically, a SIP transaction consists of a single request and any responses to that request, which include zero or more provisional responses and one or more final responses.  In the case of a transaction where the request was an INVITE (known as an INVITE transaction), the transaction also includes the ACK only if the final response was not a 2xx response.  If the response was a 2xx, the ACK is not considered part of the transaction.
+SIP는 트랜잭션 프로토콜로, 구성 요소 간의 상호 작용은 일련의 독립적인 메시지 교환을 통해 이루어진다.  특히, SIP 트랜잭션은 하나의 요청과 해당 요청에 대한 응답으로 구성되며, 여기에는 0개 이상의 임시 응답과 하나 이상의 최종 응답이 포함된다.  요청이 INVITE인 트랜잭션(INVITE 트랜잭션이라고 함)의 경우, 최종 응답이 2xx 응답이 아닌 경우에만 트랜잭션에 ACK도 포함된다.  응답이 2xx인 경우 ACK는 트랜잭션의 일부로 간주되지 않는다.
+
+>	The reason for this separation is rooted in the importance of delivering all 200 (OK) responses to an INVITE to the UAC.  To deliver them all to the UAC, the UAS alone takes responsibility for retransmitting them (see Section 13.3.1.4), and the UAC alone takes responsibility for acknowledging them with ACK (see Section 13.2.2.4).  Since this ACK is retransmitted only by the UAC, it is effectively considered its own transaction.
+	이렇게 분리하는 이유는 INVITE에 대한 200개의 모든 (OK) 응답을 UAC에 전달하는 것이 중요하기 때문이다.  모든 응답을 UAC에 전달하기 위해 UAS는 재전송을 책임지고(섹션 13.3.1.4 참조), UAC는 ACK로 응답을 승인할 책임이 있다(섹션 13.2.2.4 참조).  이 ACK는 UAC에 의해서만 재전송되므로 사실상 자체 트랜잭션으로 간주된다.
+	
+> Transactions have a client side and a server side.  The client side is known as a client transaction and the server side as a server transaction.  The client transaction sends the request, and the server transaction sends the response.  The client and server transactions are logical functions that are embedded in any number of elements.  Specifically, they exist within user agents and stateful proxy servers.  Consider the example in Section 4.  In this example, the UAC executes the client transaction, and its outbound proxy executes the server transaction.  The outbound proxy also executes a client transaction, which sends the request to a server transaction in the inbound proxy.  That proxy also executes a client transaction, which in turn sends the request to a server transaction in the UAS. This is shown in Figure 4.
+트랜잭션에는 클라이언트 측과 서버 측이 있다.  클라이언트 쪽을 클라이언트 트랜잭션이라고 하고 서버 쪽을 서버 트랜잭션이라고 한다.  클라이언트 트랜잭션은 요청을 보내고 서버 트랜잭션은 응답을 보낸다.  클라이언트 및 서버 트랜잭션은 여러 요소에 포함되는 논리적 함수이다.  특히 사용자 에이전트와 stateful 프록시 서버 내에 존재한다.  섹션 4의 예시를 살펴보겠다.  이 예제에서는 UAC가 클라이언트 트랜잭션을 실행하고 아웃바운드 프록시가 서버 트랜잭션을 실행한다.  아웃바운드 프록시는 클라이언트 트랜잭션도 실행하여 요청을 인바운드 프록시의 서버 트랜잭션으로 보낸다.  해당 프록시는 클라이언트 트랜잭션도 실행하며, 이 트랜잭션은 다시 UAS의 서버 트랜잭션으로 요청을 보낸다. 이는 그림 4에 나와 있다.
+
+ +---------+        +---------+        +---------+        +---------+
+ |      +-+|Request |+-+   +-+|Request |+-+   +-+|Request |+-+      |
+ |      |C||------->||S|   |C||------->||S|   |C||------->||S|      |
+ |      |l||        ||e|   |l||        ||e|   |l||        ||e|      |
+ |      |i||        ||r|   |i||        ||r|   |i||        ||r|      |
+ |      |e||        ||v|   |e||        ||v|   |e||        ||v|      |
+ |      |n||        ||e|   |n||        ||e|   |n||        ||e|      |
+ |      |t||        ||r|   |t||        ||r|   |t||        ||r|      |
+ |      | ||        || |   | ||        || |   | ||        || |      |
+ |      |T||        ||T|   |T||        ||T|   |T||        ||T|      |
+ |      |r||        ||r|   |r||        ||r|   |r||        ||r|      |
+ |      |a||        ||a|   |a||        ||a|   |a||        ||a|      |
+ |      |n||        ||n|   |n||        ||n|   |n||        ||n|      |
+ |      |s||Response||s|   |s||Response||s|   |s||Response||s|      |
+ |      +-+|<-------|+-+   +-+|<-------|+-+   +-+|<-------|+-+      |
+ +---------+        +---------+        +---------+        +---------+
+    UAC               Outbound           Inbound              UAS
+                      Proxy               Proxy
+
+					Figure 4: Transaction relationships
+					
+> A stateless proxy does not contain a client or server transaction. The transaction exists between the UA or stateful proxy on one side, and the UA or stateful proxy on the other side.  As far as SIP transactions are concerned, stateless proxies are effectively transparent.  The purpose of the client transaction is to receive a request from the element in which the client is embedded (call this element the "Transaction User" or TU; it can be a UA or a stateful proxy), and reliably deliver the request to a server transaction.
+stateless 프록시에는 클라이언트 또는 서버 트랜잭션이 포함되어 있지 않는다. 트랜잭션은 한쪽의 UA 또는 stateful 프록시와 다른 쪽의 UA 또는 stateful 프록시 사이에 존재한다.  SIP 트랜잭션에 관한 한, stateless 프록시는 사실상 투명하다.  클라이언트 트랜잭션의 목적은 클라이언트가 포함된 요소(이 요소를 "Transaction User" 또는 TU라고 함. UA 또는 stateful 프록시일 수 있음)로부터 요청을 수신하고 서버 트랜잭션에 요청을 안정적으로 전달하는 것이다.
+
+> The client transaction is also responsible for receiving responses and delivering them to the TU, filtering out any response retransmissions or disallowed responses (such as a response to ACK). Additionally, in the case of an INVITE request, the client transaction is responsible for generating the ACK request for any final response accepting a 2xx response.
+또한 클라이언트 트랜잭션은 응답을 수신하여 TU에 전달하고, 응답 재전송 또는 허용되지 않은 응답(예: ACK에 대한 응답)을 필터링할 책임이 있다. 또한 INVITE 요청의 경우 클라이언트 트랜잭션은 2xx 응답을 수락하는 모든 최종 응답에 대한 ACK 요청을 생성할 책임이 있다.
+
+> Similarly, the purpose of the server transaction is to receive requests from the transport layer and deliver them to the TU.  The server transaction filters any request retransmissions from the network.  The server transaction accepts responses from the TU and delivers them to the transport layer for transmission over the network.  In the case of an INVITE transaction, it absorbs the ACK request for any final response excepting a 2xx response.
+마찬가지로 서버 트랜잭션의 목적은 전송 계층에서 요청을 수신하여 TU에 전달하는 것이다.  서버 트랜잭션은 네트워크에서 재전송되는 모든 요청을 필터링한다.  서버 트랜잭션은 TU의 응답을 수락하여 네트워크를 통해 전송할 수 있도록 전송 계층에 전달한다.  INVITE 트랜잭션의 경우, 2xx 응답을 제외한 모든 최종 응답에 대한 ACK 요청을 흡수한다.
+
+> The 2xx response and its ACK receive special treatment.  This response is retransmitted only by a UAS, and its ACK generated only by the UAC.  This end-to-end treatment is needed so that a caller knows the entire set of users that have accepted the call.  Because of this special handling, retransmissions of the 2xx response are handled by the UA core, not the transaction layer.  Similarly, generation of the ACK for the 2xx is handled by the UA core.  Each proxy along the path merely forwards each 2xx response to INVITE and its corresponding ACK.
+'2xx' 응답과 해당 ACK는 특별한 대우를 받는다.  이 응답은 UAS에 의해서만 재전송되며, 해당 ACK는 UAC에 의해서만 생성된다.  이러한 종단 간 처리는 발신자가 통화를 수락한 전체 사용자 집합을 알 수 있도록 하기 위해 필요하다.  이러한 특수 처리로 인해 2xx 응답의 재전송은 트랜잭션 계층이 아닌 UA 코어에서 처리된다.  마찬가지로 2xx에 대한 ACK 생성도 UA 코어에서 처리한다.  경로에 있는 각 프록시는 각 2xx 응답을 INVITE와 해당 ACK로 전달할 뿐이다.
+
+
+17.1 Client Transaction
+
+> The client transaction provides its functionality through the maintenance of a state machine.
+클라이언트 트랜잭션은 state machine의 유지 관리를 통해 그 기능을 제공한다.
+
+> The TU communicates with the client transaction through a simple interface.  When the TU wishes to initiate a new transaction, it creates a client transaction and passes it the SIP request to send and an IP address, port, and transport to which to send it.  The client transaction begins execution of its state machine.  Valid responses are passed up to the TU from the client transaction.
+TU는 간단한 인터페이스를 통해 클라이언트 트랜잭션과 통신한다.  TU가 새 트랜잭션을 시작하려는 경우 클라이언트 트랜잭션을 생성하고 전송할 SIP 요청과 전송할 IP 주소, 포트, 전송을 전달한다.  클라이언트 트랜잭션은 해당 state machine의 실행을 시작한다.  유효한 응답은 클라이언트 트랜잭션에서 TU로 전달된다.
+
+> There are two types of client transaction state machines, depending on the method of the request passed by the TU.  One handles client transactions for INVITE requests.  This type of machine is referred to as an INVITE client transaction.  Another type handles client transactions for all requests except INVITE and ACK.  This is referred to as a non-INVITE client transaction.  There is no client transaction for ACK.  If the TU wishes to send an ACK, it passes one directly to the transport layer for transmission.
+클라이언트 트랜잭션 상태 머신에는 TU가 전달한 요청의 방식에 따라 두 가지 유형이 있습니다.  하나는 INVITE 요청에 대한 클라이언트 트랜잭션을 처리한다.  이 유형의 머신을 INVITE 클라이언트 트랜잭션이라고 한다.  다른 유형은 INVITE와 ACK를 제외한 모든 요청에 대한 클라이언트 트랜잭션을 처리한다.  이를 non-INVITE 클라이언트 트랜잭션이라고 한다.  ACK에 대한 클라이언트 트랜잭션은 없다.  TU가 ACK를 보내려면 전송을 위해 전송 계층에 직접 전달한다.
+
+> The INVITE transaction is different from those of other methods because of its extended duration.  Normally, human input is required in order to respond to an INVITE.  The long delays expected for sending a response argue for a three-way handshake.  On the other hand, requests of other methods are expected to complete rapidly. Because of the non-INVITE transaction's reliance on a two-way handshake, TUs SHOULD respond immediately to non-INVITE requests.
+INVITE 트랜잭션은 지속 시간이 길다는 점에서 다른 방법과 다르다.  일반적으로 INVITE에 응답하려면 사람의 입력이 필요하다.  응답을 전송하는 데 예상되는 긴 지연은 3자 핸드셰이크의 필요성을 주장한다.  반면에 다른 방법의 요청은 빠르게 완료될 것으로 예상된다. non-INVITE 트랜잭션은 양방향 핸드셰이크에 의존하기 때문에 TU는 non-INVITE 요청에 즉시 응답해야 한다.
+
+
+17.1.1 INVITE Client Transaction
+
+17.1.1.1 Overview of INVITE Transaction
+
+> The INVITE transaction consists of a three-way handshake.  The client transaction sends an INVITE, the server transaction sends responses, and the client transaction sends an ACK.  For unreliable transports (such as UDP), the client transaction retransmits requests at an interval that starts at T1 seconds and doubles after every retransmission.  T1 is an estimate of the round-trip time (RTT), and it defaults to 500 ms.  Nearly all of the transaction timers described here scale with T1, and changing T1 adjusts their values. The request is not retransmitted over reliable transports.  After receiving a 1xx response, any retransmissions cease altogether, and the client waits for further responses.  The server transaction can send additional 1xx responses, which are not transmitted reliably by the server transaction.  Eventually, the server transaction decides to send a final response.  For unreliable transports, that response is retransmitted periodically, and for reliable transports, it is sent once.  For each final response that is received at the client transaction, the client transaction sends an ACK, the purpose of which is to quench retransmissions of the response.
+INVITE 트랜잭션은 3자 핸드셰이크로 구성된다.  클라이언트 트랜잭션이 INVITE를 보내고, 서버 트랜잭션이 응답을 보내고, 클라이언트 트랜잭션이 ACK를 보낸다.  신뢰할 수 없는 전송(예: UDP)의 경우 클라이언트 트랜잭션은 T1초에서 시작하여 재전송할 때마다 두 배가 되는 간격으로 요청을 재전송한다.  T1은 왕복 시간(RTT)의 추정치이며 기본값은 500밀리초이다.  여기에 설명된 거의 모든 트랜잭션 타이머는 T1에 따라 조정되며, T1을 변경하면 해당 값이 조정된다. 요청은 안정적인 전송을 통해 재전송되지 않는다.  1xx 응답을 받으면 모든 재전송이 완전히 중단되고 클라이언트는 추가 응답을 기다린다.  서버 트랜잭션은 서버 트랜잭션에 의해 안정적으로 전송되지 않는 추가 1xx 응답을 보낼 수 있다.  결국 서버 트랜잭션은 최종 응답을 보내기로 결정한다.  신뢰할 수 없는 전송의 경우 해당 응답은 주기적으로 재전송되고, 신뢰할 수 있는 전송의 경우 한 번만 전송된다.  클라이언트 트랜잭션에서 최종 응답을 수신할 때마다 클라이언트 트랜잭션은 응답의 재전송을 종료하기 위한 목적으로 ACK를 보낸다.
+
+
+17.1.1.2 Formal Description
+
+> The state machine for the INVITE client transaction is shown in Figure 5.  The initial state, "calling", MUST be entered when the TU initiates a new client transaction with an INVITE request.  The client transaction MUST pass the request to the transport layer for transmission (see Section 18).  If an unreliable transport is being used, the client transaction MUST start timer A with a value of T1. If a reliable transport is being used, the client transaction SHOULD NOT start timer A (Timer A controls request retransmissions).  For any transport, the client transaction MUST start timer B with a value of 64*T1 seconds (Timer B controls transaction timeouts).
+INVITE 클라이언트 트랜잭션의 상태 머신은 그림 5에 나와 있다.  초기 상태인 "calling"은 TU가 INVITE 요청으로 새 클라이언트 트랜잭션을 시작할 때 입력해야 한다.  클라이언트 트랜잭션은 전송을 위해 요청을 전송 계층에 전달해야 한다(섹션 18 참조).  신뢰할 수 없는 전송을 사용하는 경우, 클라이언트 트랜잭션은 타이머 A를 T1 값으로 시작해야 한다. 신뢰할 수 있는 전송을 사용하는 경우, 클라이언트 트랜잭션은 타이머 A를 시작하지 않아야 한다(타이머 A는 요청 재전송을 제어한다).  모든 전송의 경우 클라이언트 트랜잭션은 64*T1초 값으로 타이머 B를 시작해야 한다(타이머 B는 트랜잭션 시간 초과를 제어한다).
+
+> When timer A fires, the client transaction MUST retransmit the request by passing it to the transport layer, and MUST reset the timer with a value of 2*T1.  The formal definition of retransmit within the context of the transaction layer is to take the message previously sent to the transport layer and pass it to the transport layer once more.
+타이머 A가 발동되면 클라이언트 트랜잭션은 요청을 전송 계층으로 전달하여 재전송해야 하며, 타이머를 2*T1의 값으로 재설정해야 한다.  트랜잭션 계층의 컨텍스트 내에서 재전송의 공식적인 정의는 이전에 전송 계층으로 전송된 메시지를 가져와서 전송 계층으로 다시 한 번 전달하는 것이다.
+
+> When timer A fires 2*T1 seconds later, the request MUST be retransmitted again (assuming the client transaction is still in this state).  This process MUST continue so that the request is retransmitted with intervals that double after each transmission. These retransmissions SHOULD only be done while the client transaction is in the "calling" state.
+타이머 A가 2*T1초 후에 실행되면 요청이 다시 재전송되어야 한다(클라이언트 트랜잭션이 여전히 이 상태에 있다고 가정).  이 프로세스는 요청이 각 전송 후 두 배의 간격으로 재전송되도록 계속되어야 한다. 이러한 재전송은 클라이언트 트랜잭션이 "calling" 상태일 때만 수행되어야 한다.
+
+> The default value for T1 is 500 ms.  T1 is an estimate of the RTT between the client and server transactions.  Elements MAY (though it is NOT RECOMMENDED) use smaller values of T1 within closed, private networks that do not permit general Internet connection.  T1 MAY be chosen larger, and this is RECOMMENDED if it is known in advance (such as on high latency access links) that the RTT is larger. Whatever the value of T1, the exponential backoffs on retransmissions described in this section MUST be used.
+T1의 기본값은 500ms이다.  T1은 클라이언트와 서버 트랜잭션 간의 RTT를 추정하는 값이다.  일반 인터넷 연결을 허용하지 않는 폐쇄형 사설 네트워크 내에서는 더 작은 값의 T1을 사용할 수 있다(권장하지는 않음).  T1은 더 크게 선택할 수 있으며, 지연 시간이 긴 액세스 링크에서와 같이 RTT가 더 크다는 것을 미리 알 수 있는 경우 권장된다. T1의 값에 관계없이 이 섹션에 설명된 재전송에 대한 지수 백오프를 반드시 사용해야 한다.
+
+> If the client transaction is still in the "Calling" state when timer B fires, the client transaction SHOULD inform the TU that a timeout has occurred.  The client transaction MUST NOT generate an ACK.  The value of 64*T1 is equal to the amount of time required to send seven requests in the case of an unreliable transport.
+타이머 B가 발동될 때 클라이언트 트랜잭션이 여전히 "Calling" 상태인 경우 클라이언트 트랜잭션은 TU에 시간 초과가 발생했음을 알려야 한다.  클라이언트 트랜잭션은 ACK를 생성해서는 안 된다.  64*T1의 값은 신뢰할 수 없는 전송의 경우 7개의 요청을 전송하는 데 필요한 시간과 같다.
+
+> If the client transaction receives a provisional response while in the "Calling" state, it transitions to the "Proceeding" state. In the "Proceeding" state, the client transaction SHOULD NOT retransmit the request any longer. Furthermore, the provisional response MUST be passed to the TU.  Any further provisional responses MUST be passed up to the TU while in the "Proceeding" state.
+클라이언트 트랜잭션이 "Calling" 상태일 때 임시 응답을 받으면 "Proceeding" 상태로 전환된다. "Proceeding" 상태에서는 클라이언트 트랜잭션이 더 이상 요청을 재전송해서는 안 된다. 또한 임시 응답은 반드시 TU에 전달되어야 한다.  모든 추가 임시 응답은 "Proceeding" 상태일 때 TU에 전달되어야 한다.
+
+> When in either the "Calling" or "Proceeding" states, reception of a response with status code from 300-699 MUST cause the client transaction to transition to "Completed".  The client transaction MUST pass the received response up to the TU, and the client transaction MUST generate an ACK request, even if the transport is reliable (guidelines for constructing the ACK from the response are given in Section 17.1.1.3) and then pass the ACK to the transport layer for transmission.  The ACK MUST be sent to the same address, port, and transport to which the original request was sent.  The client transaction SHOULD start timer D when it enters the "Completed" state, with a value of at least 32 seconds for unreliable transports, and a value of zero seconds for reliable transports. Timer D reflects the amount of time that the server transaction can remain in the "Completed" state when unreliable transports are used. This is equal to Timer H in the INVITE server transaction, whose default is 64*T1.  However, the client transaction does not know the value of T1 in use by the server transaction, so an absolute minimum of 32s is used instead of basing Timer D on T1.
+"Calling" 또는 "Proceeding" 상태일 때 상태 코드가 300~699인 응답을 수신하면 클라이언트 트랜잭션이 "Completed"으로 전환되어야 한다.  클라이언트 트랜잭션은 수신한 응답을 TU에 전달해야 하며, 클라이언트 트랜잭션은 전송이 신뢰할 수 있는 경우라도 ACK 요청을 생성한 다음(응답에서 ACK를 구성하는 지침은 17.1.1.3항에 나와 있다) 전송을 위해 전송 계층에 ACK를 전달해야 한다.  ACK는 원래 요청이 전송된 주소, 포트 및 전송과 동일한 주소, 포트 및 전송으로 전송되어야 한다.  클라이언트 트랜잭션은 "Completed" 상태가 되면 타이머 D를 시작해야 하며, 신뢰할 수 없는 전송의 경우 최소 32초, 신뢰할 수 있는 전송의 경우 0초의 값을 사용해야 한다. 타이머 D는 신뢰할 수 없는 전송을 사용할 때 서버 트랜잭션이 "Completed" 상태로 유지될 수 있는 시간을 반영한다. 이는 기본값이 64*T1인 INVITE 서버 트랜잭션의 타이머 H와 동일하다.  그러나 클라이언트 트랜잭션은 서버 트랜잭션에서 사용 중인 T1의 값을 알 수 없으므로 타이머 D는 T1을 기준으로 하는 대신 절대 최소값인 32초가 사용된다.
+
+> Any retransmissions of the final response that are received while in the "Completed" state MUST cause the ACK to be re-passed to the transport layer for retransmission, but the newly received response MUST NOT be passed up to the TU.  A retransmission of the response is defined as any response which would match the same client transaction based on the rules of Section 17.1.3.
+"Completed" 상태에서 수신된 최종 응답의 재전송은 반드시 재전송을 위해 ACK를 전송 계층으로 다시 전달해야 하지만, 새로 수신된 응답은 TU로 전달해서는 안 된다.  응답의 재전송은 섹션 17.1.3의 규칙에 따라 동일한 클라이언트 트랜잭션과 일치하는 모든 응답으로 정의된다.
+
+                               |INVITE from TU
+             Timer A fires     |INVITE sent
+             Reset A,          V                      Timer B fires
+             INVITE sent +-----------+                or Transport Err.
+               +---------|           |---------------+inform TU
+               |         |  Calling  |               |
+               +-------->|           |-------------->|
+                         +-----------+ 2xx           |
+                            |  |       2xx to TU     |
+                            |  |1xx                  |
+    300-699 +---------------+  |1xx to TU            |
+   ACK sent |                  |                     |
+ resp. to TU |  1xx             V                     |
+            |  1xx to TU  -----------+               |
+            |  +---------|           |               |
+            |  |         |Proceeding |-------------->|
+            |  +-------->|           | 2xx           |
+            |            +-----------+ 2xx to TU     |
+            |       300-699    |                     |
+            |       ACK sent,  |                     |
+            |       resp. to TU|                     |
+            |                  |                     |      NOTE:
+            |  300-699         V                     |
+            |  ACK sent  +-----------+Transport Err. |  transitions
+            |  +---------|           |Inform TU      |  labeled with
+            |  |         | Completed |-------------->|  the event
+            |  +-------->|           |               |  over the action
+            |            +-----------+               |  to take
+            |              ^   |                     |
+            |              |   | Timer D fires       |
+            +--------------+   | -                   |
+                               |                     |
+                               V                     |
+                         +-----------+               |
+                         |           |               |
+                         | Terminated|<--------------+
+                         |           |
+                         +-----------+
+						 
+				Figure 5: INVITE client transaction
+				
+> If timer D fires while the client transaction is in the "Completed" state, the client transaction MUST move to the terminated state.
+클라이언트 트랜잭션이 "Completed" 상태일 때 타이머 D가 발동하면 클라이언트 트랜잭션은 반드시 종료된 상태로 이동해야 한다.
+
+> When in either the "Calling" or "Proceeding" states, reception of a 2xx response MUST cause the client transaction to enter the "Terminated" state, and the response MUST be passed up to the TU. The handling of this response depends on whether the TU is a proxy core or a UAC core.  A UAC core will handle generation of the ACK for this response, while a proxy core will always forward the 200 (OK) upstream.  The differing treatment of 200 (OK) between proxy and UAC is the reason that handling of it does not take place in the transaction layer.
+"Calling" 또는 "Proceeding" 상태일 때 2xx 응답을 수신하면 클라이언트 트랜잭션이 "Terminated" 상태가 되어야 하며, 응답은 반드시 TU로 전달되어야 한다. 이 응답의 처리는 TU가 프록시 코어인지 UAC 코어인지에 따라 달라진다.  프록시 코어는 항상 200(OK)을 업스트림으로 전달하는 반면, UAC 코어는 이 응답에 대한 ACK 생성을 처리한다.  프록시와 UAC 간에 200(OK)를 다르게 처리하는 이유는 트랜잭션 계층에서 이 응답의 처리가 이루어지지 않기 때문이다.
+
+> The client transaction MUST be destroyed the instant it enters the "Terminated" state.  This is actually necessary to guarantee correct operation.  The reason is that 2xx responses to an INVITE are treated differently; each one is forwarded by proxies, and the ACK handling in a UAC is different.  Thus, each 2xx needs to be passed to a proxy core (so that it can be forwarded) and to a UAC core (so it can be acknowledged).  No transaction layer processing takes place. Whenever a response is received by the transport, if the transport layer finds no matching client transaction (using the rules of Section 17.1.3), the response is passed directly to the core.  Since the matching client transaction is destroyed by the first 2xx, subsequent 2xx will find no match and therefore be passed to the core.
+클라이언트 트랜잭션은 "Terminated" 상태가 되는 즉시 삭제되어야 한다.  이는 실제로 올바른 작동을 보장하기 위해 필요하다.  그 이유는 INVITE에 대한 2xx 응답이 각각 프록시에 의해 전달되고 UAC에서 ACK 처리가 다르기 때문이다.  따라서 각 2xx는 프록시 코어(전달될 수 있도록)와 UAC 코어(승인될 수 있도록)로 전달되어야 한다.  트랜잭션 계층 처리는 발생하지 않는다. 전송에서 응답을 수신할 때마다 전송 계층에서 (섹션 17.1.3의 규칙을 사용하여) 일치하는 클라이언트 트랜잭션을 찾지 못하면 응답이 코어로 직접 전달된다.  일치하는 클라이언트 트랜잭션이 첫 번째 2xx에 의해 파괴되므로 후속 2xx에서는 일치하는 트랜잭션을 찾을 수 없으므로 코어로 전달된다.
+
+
+17.1.1.3 Construction of the ACK Request
+
+> This section specifies the construction of ACK requests sent within the client transaction.  A UAC core that generates an ACK for 2xx MUST instead follow the rules described in Section 13.
+이 섹션에서는 클라이언트 트랜잭션 내에서 전송되는 ACK 요청의 구성을 지정한다.  2xx에 대한 ACK를 생성하는 UAC 코어는 대신 섹션 13에 설명된 규칙을 따라야 한다.
+
+> The ACK request constructed by the client transaction MUST contain values for the Call-ID, From, and Request-URI that are equal to the values of those header fields in the request passed to the transport by the client transaction (call this the "original request").  The To header field in the ACK MUST equal the To header field in the response being acknowledged, and therefore will usually differ from the To header field in the original request by the addition of the tag parameter.  The ACK MUST contain a single Via header field, and this MUST be equal to the top Via header field of the original request.  The CSeq header field in the ACK MUST contain the same value for the sequence number as was present in the original request, but the method parameter MUST be equal to "ACK".
+클라이언트 트랜잭션에 의해 구성된 ACK 요청에는 클라이언트 트랜잭션이 전송에 전달한 요청(이를 "원본 요청"이라고 함)의 헤더 필드 값과 동일한 Call-ID, 발신자 및 요청-URI 값이 포함되어야 한다.  ACK의 To 헤더 필드는 승인되는 응답의 To 헤더 필드와 같아야 하며, 따라서 일반적으로 태그 매개변수를 추가하여 원래 요청의 To 헤더 필드와 다를 수 있다.  ACK에는 하나의 Via 헤더 필드가 포함되어야 하며, 이 필드는 원본 요청의 최상위 Via 헤더 필드와 같아야 한다.  ACK의 CSeq 헤더 필드에는 원본 요청에 있는 시퀀스 번호와 동일한 값이 포함되어야 하지만 메서드 매개 변수는 "ACK"와 같아야 한다.
+
+> If the INVITE request whose response is being acknowledged had Route header fields, those header fields MUST appear in the ACK.  This is to ensure that the ACK can be routed properly through any downstream stateless proxies.
+응답이 확인되는 INVITE 요청에 Route 헤더 필드가 있는 경우, 해당 헤더 필드는 반드시 ACK에 표시되어야 한다.  이는 ACK가 다운스트림 stateless 프록시를 통해 올바르게 라우팅될 수 있도록 하기 위함이다.
+
+> Although any request MAY contain a body, a body in an ACK is special since the request cannot be rejected if the body is not understood. Therefore, placement of bodies in ACK for non-2xx is NOT RECOMMENDED, but if done, the body types are restricted to any that appeared in the INVITE, assuming that the response to the INVITE was not 415.  If it was, the body in the ACK MAY be any type listed in the Accept header field in the 415.
+모든 요청에 body이 포함될 수 있지만, 본문이 이해되지 않으면 요청을 거부할 수 없기 때문에 ACK의 본문은 특별하다. 따라서 2xx가 아닌 ACK에 본문을 넣는 것은 권장되지 않지만, 그렇게 할 경우 본문 유형은 초대 응답이 415가 아니라고 가정할 때 INVITE에 나타난 유형으로 제한된다.  415인 경우 ACK의 body은 415의 Accept 헤더 필드에 나열된 모든 유형이 될 수 있다.
+
+For example, consider the following request:
+
+	INVITE sip:bob@biloxi.com SIP/2.0
+	Via: SIP/2.0/UDP pc33.atlanta.com;branch=z9hG4bKkjshdyff
+	To: Bob <sip:bob@biloxi.com>
+	From: Alice <sip:alice@atlanta.com>;tag=88sja8x
+	Max-Forwards: 70
+	Call-ID: 987asjd97y7atg
+	CSeq: 986759 INVITE
+	
+> The ACK request for a non-2xx final response to this request would look like this:
+이 요청에 대한 2xx가 아닌 최종 응답에 대한 ACK 요청은 다음과 같다:
+
+	ACK sip:bob@biloxi.com SIP/2.0
+	Via: SIP/2.0/UDP pc33.atlanta.com;branch=z9hG4bKkjshdyff
+	To: Bob <sip:bob@biloxi.com>;tag=99sa0xk
+	From: Alice <sip:alice@atlanta.com>;tag=88sja8x
+	Max-Forwards: 70
+	Call-ID: 987asjd97y7atg
+	CSeq: 986759 ACK
+	
+
+17.1.2 Non-INVITE Client Transaction
+
+17.1.2.1 Overview of the non-INVITE Transaction
+
+> Non-INVITE transactions do not make use of ACK.  They are simple request-response interactions.  For unreliable transports, requests are retransmitted at an interval which starts at T1 and doubles until it hits T2.  If a provisional response is received, retransmissions continue for unreliable transports, but at an interval of T2.  The server transaction retransmits the last response it sent, which can be a provisional or final response, only when a retransmission of the request is received.  This is why request retransmissions need to continue even after a provisional response; they are to ensure reliable delivery of the final response.
+non-INVITE 트랜잭션은 ACK를 사용하지 않는다.  이는 단순한 요청-응답 상호작용이다.  신뢰할 수 없는 전송의 경우, 요청은 T1에서 시작하여 T2에 도달할 때까지 두 배가 되는 간격으로 재전송된다.  임시 응답이 수신되면 신뢰할 수 없는 전송에 대해 재전송이 계속되지만 간격은 T2이다.  서버 트랜잭션은 요청의 재전송이 수신된 경우에만 임시 응답 또는 최종 응답이 될 수 있는 마지막으로 전송한 응답을 재전송한다.  따라서 임시 응답 이후에도 요청 재전송을 계속해야 하는 이유는 최종 응답의 안정적인 전달을 보장하기 위해서이다.
+
+> Unlike an INVITE transaction, a non-INVITE transaction has no special handling for the 2xx response.  The result is that only a single 2xx response to a non-INVITE is ever delivered to a UAC.
+INVITE 트랜잭션과 달리 non-INVITE 트랜잭션은 2xx 응답에 대한 특별한 처리가 없다.  그 결과, non-INVITE에 대한 2xx 응답은 단 한 번만 UAC에 전달된다.
+
+
+17.1.2.2 Formal Description
+
+> The state machine for the non-INVITE client transaction is shown in Figure 6.  It is very similar to the state machine for INVITE.
+non-INVITE 클라이언트 트랜잭션의 상태 머신은 그림 6에 나와 있다.  이는 INVITE의 상태 머신과 매우 유사하다.
+
+> The "Trying" state is entered when the TU initiates a new client transaction with a request.  When entering this state, the client transaction SHOULD set timer F to fire in 64*T1 seconds.  The request MUST be passed to the transport layer for transmission.  If an unreliable transport is in use, the client transaction MUST set timer E to fire in T1 seconds.  If timer E fires while still in this state, the timer is reset, but this time with a value of MIN(2*T1, T2). When the timer fires again, it is reset to a MIN(4*T1, T2).  This process continues so that retransmissions occur with an exponentially increasing interval that caps at T2.  The default value of T2 is 4s, and it represents the amount of time a non-INVITE server transaction will take to respond to a request, if it does not respond immediately.  For the default values of T1 and T2, this results in intervals of 500 ms, 1 s, 2 s, 4 s, 4 s, 4 s, etc.
+"Trying" 상태는 TU가 요청이 있는 새 클라이언트 트랜잭션을 시작할 때 입력된다.  이 상태가 되면 클라이언트 트랜잭션은 타이머 F가 64*T1초 후에 실행되도록 설정해야 한다.  요청은 전송을 위해 전송 계층으로 전달되어야 한다.  신뢰할 수 없는 전송이 사용 중인 경우 클라이언트 트랜잭션은 타이머 E가 T1초 후에 실행되도록 설정해야 한다.  이 상태에서 타이머 E가 발동하면 타이머가 재설정되지만 이번에는 MIN(2*T1, T2) 값으로 재설정된다. 타이머가 다시 발동되면 타이머는 MIN(4*T1, T2)로 재설정된다.  이 프로세스가 계속 진행되어 재전송 간격이 기하급수적으로 증가하여 T2에 도달한다.  T2의 기본값은 4초이며, non-INVITE 서버 트랜잭션이 요청에 즉시 응답하지 않을 경우 요청에 응답하는 데 걸리는 시간을 나타낸다.  기본값인 T1 및 T2의 경우 500ms, 1초, 2초, 4초, 4초, 4초 등의 간격이 된다.
+
+> If Timer F fires while the client transaction is still in the "Trying" state, the client transaction SHOULD inform the TU about the timeout, and then it SHOULD enter the "Terminated" state.  If a provisional response is received while in the "Trying" state, the response MUST be passed to the TU, and then the client transaction SHOULD move to the "Proceeding" state.  If a final response (status codes 200-699) is received while in the "Trying" state, the response MUST be passed to the TU, and the client transaction MUST transition to the "Completed" state.
+클라이언트 트랜잭션이 여전히 "Trying" 상태일 때 타이머 F가 발동하면 클라이언트 트랜잭션은 시간 초과에 대해 TU에 알리고 "Terminated" 상태로 전환해야 한다.  "Trying" 상태에서 임시 응답을 받으면 해당 응답을 TU에 전달해야 하며 클라이언트 트랜잭션은 "Proceeding" 상태로 이동해야 한다.  "Trying" 상태에서 최종 응답(상태 코드 200~699)이 수신되면 응답을 TU로 전달하고 클라이언트 트랜잭션을 "Completed" 상태로 전환해야 한다.
+
+> If Timer E fires while in the "Proceeding" state, the request MUST be passed to the transport layer for retransmission, and Timer E MUST be reset with a value of T2 seconds.  If timer F fires while in the "Proceeding" state, the TU MUST be informed of a timeout, and the client transaction MUST transition to the terminated state.  If a final response (status codes 200-699) is received while in the "Proceeding" state, the response MUST be passed to the TU, and the client transaction MUST transition to the "Completed" state.
+타이머 E가 "Proceeding" 상태에서 발동하면 요청은 재전송을 위해 전송 계층으로 전달되어야 하며, 타이머 E는 T2초 값으로 재설정되어야 한다.  "Proceeding" 상태에서 타이머 F가 발동하면 TU에 시간 초과를 알리고 클라이언트 트랜잭션이 종료된 상태로 전환되어야 한다.  "Proceeding" 상태에서 최종 응답(상태 코드 200~699)이 수신되면 응답이 TU에 전달되어야 하며 클라이언트 트랜잭션은 "Completed" 상태로 전환되어야 한다.
+
+> Once the client transaction enters the "Completed" state, it MUST set Timer K to fire in T4 seconds for unreliable transports, and zero seconds for reliable transports.  The "Completed" state exists to buffer any additional response retransmissions that may be received (which is why the client transaction remains there only for unreliable transports).  T4 represents the amount of time the network will take to clear messages between client and server transactions. The default value of T4 is 5s.  A response is a retransmission when it matches the same transaction, using the rules specified in Section 17.1.3.  If Timer K fires while in this state, the client transaction MUST transition to the "Terminated" state.
+클라이언트 트랜잭션이 "Completed" 상태가 되면, 불안정한 전송의 경우 타이머 K가 T4초 후에 실행되도록 설정해야 하며, 안정적인 전송의 경우 0초 후에 실행되도록 설정해야 한다.  "Completed" 상태는 수신될 수 있는 추가 응답 재전송을 버퍼링하기 위해 존재한다(따라서 클라이언트 트랜잭션은 신뢰할 수 없는 전송의 경우에만 유지된다).  T4는 네트워크가 클라이언트와 서버 트랜잭션 간의 메시지를 지우는 데 걸리는 시간을 나타낸다. T4의 기본값은 5초이다.  응답은 섹션 17.1.3에 지정된 규칙을 사용하여 동일한 트랜잭션과 일치할 때 재전송된다.  이 상태에서 타이머 K가 발동하면 클라이언트 트랜잭션은 반드시 "Terminated" 상태로 전환되어야 한다.
+
+> Once the transaction is in the terminated state, it MUST be destroyed immediately.
+트랜잭션이 종료된 상태가 되면 즉시 파기해야 한다.
+
+
+17.1.3 Matching Responses to Client Transactions
+
+> When the transport layer in the client receives a response, it has to determine which client transaction will handle the response, so that the processing of Sections 17.1.1 and 17.1.2 can take place.  The branch parameter in the top Via header field is used for this purpose.  A response matches a client transaction under two conditions:
+클라이언트의 전송 계층이 응답을 수신하면 섹션 17.1.1 및 17.1.2의 처리가 이루어질 수 있도록 응답을 처리할 클라이언트 트랜잭션을 결정해야 한다.  상단의 Via 헤더 필드에 있는 브랜치 매개변수가 이 용도로 사용된다.  응답은 두 가지 조건에서 클라이언트 트랜잭션과 일치:
+
+>	1. If the response has the same value of the branch parameter in the top Via header field as the branch parameter in the top Via header field of the request that created the transaction.
+	1. 응답의 상부 Via 헤더 필드에 있는 브랜치 매개변수 값이 트랜잭션을 생성한 요청의 상부 Via 헤더 필드에 있는 브랜치 매개변수와 동일한 경우.
+	
+>	2.  If the method parameter in the CSeq header field matches the method of the request that created the transaction.  The method is needed since a CANCEL request constitutes a different transaction, but shares the same value of the branch parameter.
+	2.  CSeq 헤더 필드의 메소드 매개변수가 트랜잭션을 생성한 요청의 메소드와 일치하는 경우.  이 메서드는 CANCEL 요청이 다른 트랜잭션을 구성하지만 브랜치 매개변수의 동일한 값을 공유하기 때문에 필요한다.
+	
+> If a request is sent via multicast, it is possible that it will generate multiple responses from different servers.  These responses will all have the same branch parameter in the topmost Via, but vary in the To tag.  The first response received, based on the rules above, will be used, and others will be viewed as retransmissions. That is not an error; multicast SIP provides only a rudimentary "single-hop-discovery-like" service that is limited to processing a single response.  See Section 18.1.1 for details.
+요청이 멀티캐스트를 통해 전송되는 경우 여러 서버에서 여러 개의 응답을 생성할 수 있다.  이러한 응답은 모두 최상위 Via에 동일한 분기 매개 변수를 갖지만 To 태그는 다른다.  위의 규칙에 따라 수신된 첫 번째 응답이 사용되며 다른 응답은 재전송으로 간주된다. 이는 오류가 아니며 멀티캐스트 SIP는 단일 응답 처리로 제한되는 초보적인 "단일 홉 검색과 유사한" 서비스만 제공한다.  자세한 내용은 섹션 18.1.1을 참조하라.
+
+
+17.1.4 Handling Transport Errors
+
+                                   |Request from TU
+                                   |send request
+               Timer E             V
+               send request  +-----------+
+                   +---------|           |-------------------+
+                   |         |  Trying   |  Timer F          |
+                   +-------->|           |  or Transport Err.|
+                             +-----------+  inform TU        |
+                200-699         |  |                         |
+                resp. to TU     |  |1xx                      |
+                +---------------+  |resp. to TU              |
+                |                  |                         |
+                |   Timer E        V       Timer F           |
+                |   send req +-----------+ or Transport Err. |
+                |  +---------|           | inform TU         |
+                |  |         |Proceeding |------------------>|
+                |  +-------->|           |-----+             |
+                |            +-----------+     |1xx          |
+                |              |      ^        |resp to TU   |
+                | 200-699      |      +--------+             |
+                | resp. to TU  |                             |
+                |              |                             |
+                |              V                             |
+                |            +-----------+                   |
+                |            |           |                   |
+                |            | Completed |                   |
+                |            |           |                   |
+                |            +-----------+                   |
+                |              ^   |                         |
+                |              |   | Timer K                 |
+                +--------------+   | -                       |
+                                   |                         |
+                                   V                         |
+             NOTE:           +-----------+                   |
+                             |           |                   |
+         transitions         | Terminated|<------------------+
+         labeled with        |           |
+         the event           +-----------+
+         over the action
+         to take
+
+				Figure 6: non-INVITE client transaction
+				
+> When the client transaction sends a request to the transport layer to be sent, the following procedures are followed if the transport layer indicates a failure.
+클라이언트 트랜잭션이 전송 계층에 요청을 전송할 때 전송 계층이 실패를 표시하면 다음 절차를 따른다.
+
+> The client transaction SHOULD inform the TU that a transport failure has occurred, and the client transaction SHOULD transition directly to the "Terminated" state.  The TU will handle the failover mechanisms described in [4].
+클라이언트 트랜잭션은 전송 실패가 발생했음을 TU에 알려야 하며, 클라이언트 트랜잭션은 "Terminated" 상태로 바로 전환되어야 한다.  TU는 [4]에 설명된 failover 메커니즘을 처리한다.
+
+
+17.2 Server Transaction
+
+> The server transaction is responsible for the delivery of requests to the TU and the reliable transmission of responses.  It accomplishes this through a state machine.  Server transactions are created by the core when a request is received, and transaction handling is desired for that request (this is not always the case).
+서버 트랜잭션은 TU에 요청을 전달하고 응답을 안정적으로 전송할 책임이 있다.  이는 상태 머신을 통해 이루어진다.  서버 트랜잭션은 요청이 수신되고 해당 요청에 대한 트랜잭션 처리가 필요할 때 코어에 의해 생성된다(항상 그런 것은 아님).
+
+> As with the client transactions, the state machine depends on whether the received request is an INVITE request.
+클라이언트 트랜잭션과 마찬가지로 상태 머신은 수신된 요청이 INVITE 요청인지 여부에 따라 달라진다.
+
+
+17.2.1 INVITE Server Transaction
+
+> The state diagram for the INVITE server transaction is shown in Figure 7.
+INVITE 서버 트랜잭션의 상태 다이어그램은 그림 7에 나와 있다.
+
+> When a server transaction is constructed for a request, it enters the "Proceeding" state.  The server transaction MUST generate a 100 (Trying) response unless it knows that the TU will generate a provisional or final response within 200 ms, in which case it MAY generate a 100 (Trying) response.  This provisional response is needed to quench request retransmissions rapidly in order to avoid network congestion.  The 100 (Trying) response is constructed according to the procedures in Section 8.2.6, except that the insertion of tags in the To header field of the response (when none was present in the request) is downgraded from MAY to SHOULD NOT. The request MUST be passed to the TU.
+요청에 대해 서버 트랜잭션이 구성되면 "Proceeding" 상태가 된다.  서버 트랜잭션은 TU가 200ms 이내에 임시 또는 최종 응답을 생성할 것이라는 것을 알지 못하는 한 반드시 100(Trying) 응답을 생성해야 하며, 이 경우 100(Trying) 응답을 생성할 수 있다.  이 임시 응답은 네트워크 정체를 피하기 위해 요청 재전송을 빠르게 종료하는 데 필요하다.  100(Trying) 응답은 섹션 8.2.6의 절차에 따라 구성되지만, 응답의 To 헤더 필드에 태그 삽입(요청에 태그가 없는 경우)이 MAY에서 SHOULD NOT로 다운그레이드된다는 점을 제외하고는 섹션 8.2.6에 따라 구성된다. 요청은 반드시 TU로 전달되어야 한다.
+
+> The TU passes any number of provisional responses to the server transaction.  So long as the server transaction is in the "Proceeding" state, each of these MUST be passed to the transport layer for transmission.  They are not sent reliably by the transaction layer (they are not retransmitted by it) and do not cause a change in the state of the server transaction.  If a request retransmission is received while in the "Proceeding" state, the most recent provisional response that was received from the TU MUST be passed to the transport layer for retransmission.  A request is a retransmission if it matches the same server transaction based on the rules of Section 17.2.3.
+TU는 서버 트랜잭션에 임시 응답을 얼마든지 전달할 수 있다.  서버 트랜잭션이 "Proceeding" 상태인 한, 이러한 각 응답은 전송을 위해 전송 계층으로 전달되어야 한다.  이러한 응답은 트랜잭션 계층에 의해 안정적으로 전송되지 않으며(재전송되지 않음) 서버 트랜잭션의 상태를 변경하지 않는다.  "Proceeding" 상태에서 요청 재전송이 수신되면 TU로부터 받은 가장 최근의 임시 응답이 재전송을 위해 전송 계층으로 전달되어야 한다.  요청이 섹션 17.2.3의 규칙에 따라 동일한 서버 트랜잭션과 일치하는 경우 재전송이다.
+
+> If, while in the "Proceeding" state, the TU passes a 2xx response to the server transaction, the server transaction MUST pass this response to the transport layer for transmission.  It is not retransmitted by the server transaction; retransmissions of 2xx responses are handled by the TU.  The server transaction MUST then transition to the "Terminated" state.
+"Proceeding" 상태에서 TU가 서버 트랜잭션에 2xx 응답을 전달하면 서버 트랜잭션은 전송을 위해 이 응답을 전송 계층에 전달해야 한다.  서버 트랜잭션은 이 응답을 재전송하지 않으며, 2xx 응답의 재전송은 TU에서 처리한다.  그러면 서버 트랜잭션은 반드시 "Terminated" 상태로 전환되어야 한다.
+
+> While in the "Proceeding" state, if the TU passes a response with status code from 300 to 699 to the server transaction, the response MUST be passed to the transport layer for transmission, and the state machine MUST enter the "Completed" state.  For unreliable transports, timer G is set to fire in T1 seconds, and is not set to fire for reliable transports.
+"Proceeding" 상태일 때 TU가 서버 트랜잭션에 상태 코드가 300~699인 응답을 전달하면, 응답은 전송을 위해 전송 계층으로 전달되어야 하며 상태 머신은 "Completed" 상태로 진입해야 합니다.  신뢰할 수 없는 전송의 경우 타이머 G는 T1초 후에 발동하도록 설정되며, 신뢰할 수 있는 전송의 경우 발동하도록 설정되지 않는다.
+
+> This is a change from RFC 2543, where responses were always retransmitted, even over reliable transports.
+이는 신뢰할 수 있는 전송을 통해서도 항상 응답이 재전송되던 RFC 2543에서 변경된 사항이다.
+
+> When the "Completed" state is entered, timer H MUST be set to fire in 64*T1 seconds for all transports.  Timer H determines when the server transaction abandons retransmitting the response.  Its value is chosen to equal Timer B, the amount of time a client transaction will continue to retry sending a request.  If timer G fires, the response is passed to the transport layer once more for retransmission, and timer G is set to fire in MIN(2*T1, T2) seconds.  From then on, when timer G fires, the response is passed to the transport again for transmission, and timer G is reset with a value that doubles, unless that value exceeds T2, in which case it is reset with the value of T2.  This is identical to the retransmit behavior for requests in the "Trying" state of the non-INVITE client transaction.  Furthermore, while in the "Completed" state, if a request retransmission is received, the server SHOULD pass the response to the transport for retransmission.
+"Completed" 상태가 되면 모든 전송에 대해 64*T1초 후에 타이머 H가 실행되도록 설정해야 한다.  타이머 H는 서버 트랜잭션이 응답 재전송을 포기하는 시점을 결정한다.  이 값은 클라이언트 트랜잭션이 요청 전송을 계속 재시도하는 시간인 타이머 B와 같도록 선택된다.  타이머 G가 발동되면 응답은 재전송을 위해 전송 계층으로 한 번 더 전달되고 타이머 G는 MIN(2*T1, T2) 초 단위로 발동되도록 설정된다.  이후 타이머 G가 발동하면 응답은 전송을 위해 다시 전송 계층으로 전달되고 타이머 G는 두 배가 된 값으로 재설정된다(단, 해당 값이 T2를 초과하는 경우 T2의 값으로 재설정된다).  이는 초대하지 않은 클라이언트 트랜잭션의 "Trying" 상태에 있는 요청에 대한 재전송 동작과 동일한다.  또한 "Completed" 상태일 때 요청 재전송이 수신되면 서버는 재전송을 위해 응답을 전송에 전달해야 한다.
+
+> If an ACK is received while the server transaction is in the "Completed" state, the server transaction MUST transition to the "Confirmed" state.  As Timer G is ignored in this state, any retransmissions of the response will cease.
+서버 트랜잭션이 "Completed" 상태일 때 ACK를 받으면 서버 트랜잭션은 반드시 "Completed" 상태로 전환되어야 한다.  이 상태에서는 타이머 G가 무시되므로 응답의 모든 재전송이 중단된다.
+
+>If timer H fires while in the "Completed" state, it implies that the ACK was never received.  In this case, the server transaction MUST transition to the "Terminated" state, and MUST indicate to the TU that a transaction failure has occurred.
+"Completed" 상태에서 타이머 H가 발동하면 ACK가 수신되지 않았음을 의미한다.  이 경우 서버 트랜잭션은 반드시 "Terminated" 상태로 전환되어야 하며, 트랜잭션 실패가 발생했음을 TU에 표시해야 한다.
+
+                               |INVITE
+                               |pass INV to TU
+            INVITE             V send 100 if TU won't in 200ms
+            send response+-----------+
+                +--------|           |--------+101-199 from TU
+                |        | Proceeding|        |send response
+                +------->|           |<-------+
+                         |           |          Transport Err.
+                         |           |          Inform TU
+                         |           |--------------->+
+                         +-----------+                |
+            300-699 from TU |     |2xx from TU        |
+            send response   |     |send response      |
+                            |     +------------------>+
+                            |                         |
+            INVITE          V          Timer G fires  |
+            send response+-----------+ send response  |
+                +--------|           |--------+       |
+                |        | Completed |        |       |
+                +------->|           |<-------+       |
+                         +-----------+                |
+                            |     |                   |
+                        ACK |     |                   |
+                        -   |     +------------------>+
+                            |        Timer H fires    |
+                            V        or Transport Err.|
+                         +-----------+  Inform TU     |
+                         |           |                |
+                         | Confirmed |                |
+                         |           |                |
+                         +-----------+                |
+                               |                      |
+                               |Timer I fires         |
+                               |-                     |
+                               |                      |
+                               V                      |
+                         +-----------+                |
+                         |           |                |
+                         | Terminated|<---------------+
+                         |           |
+                         +-----------+
+
+				Figure 7: INVITE server transaction
+				
+> The purpose of the "Confirmed" state is to absorb any additional ACK messages that arrive, triggered from retransmissions of the final response.  When this state is entered, timer I is set to fire in T4 seconds for unreliable transports, and zero seconds for reliable transports.  Once timer I fires, the server MUST transition to the "Terminated" state.
+"Confirmed" 상태의 목적은 최종 응답의 재전송으로 트리거되어 도착하는 모든 추가 ACK 메시지를 흡수하는 것이다.  이 상태가 되면 타이머 I은 신뢰할 수 없는 전송의 경우 T4초, 신뢰할 수 있는 전송의 경우 0초 후에 실행되도록 설정된다.  타이머 I이 발동되면 서버는 반드시 "Terminated" 상태로 전환되어야 한다.
+
+> Once the transaction is in the "Terminated" state, it MUST be destroyed immediately.  As with client transactions, this is needed to ensure reliability of the 2xx responses to INVITE.
+트랜잭션이 "Terminated" 상태가 되면 즉시 파기해야 한다.  클라이언트 트랜잭션과 마찬가지로, 이는 INVITE에 대한 2xx 응답의 신뢰성을 보장하기 위해 필요한다.
+
+
+17.2.2 Non-INVITE Server Transaction
+
+> The state machine for the non-INVITE server transaction is shown in Figure 8.
+non-INVITE 서버 트랜잭션의 state machine은 그림 8에 나와 있다.
+
+> The state machine is initialized in the "Trying" state and is passed a request other than INVITE or ACK when initialized.  This request is passed up to the TU.  Once in the "Trying" state, any further request retransmissions are discarded.  A request is a retransmission if it matches the same server transaction, using the rules specified in Section 17.2.3.
+상태 머신은 "Trying" 상태로 초기화되며, 초기화 시 INVITE 또는 ACK 이외의 요청을 전달받는다.  이 요청은 TU로 전달된다.  "Trying" 상태가 되면 추가 요청 재전송은 모두 삭제된다.  요청이 17.2.3항에 명시된 규칙을 사용하여 동일한 서버 트랜잭션과 일치하는 경우 재전송이 된다.
+
+> While in the "Trying" state, if the TU passes a provisional response to the server transaction, the server transaction MUST enter the "Proceeding" state.  The response MUST be passed to the transport layer for transmission.  Any further provisional responses that are received from the TU while in the "Proceeding" state MUST be passed to the transport layer for transmission.  If a retransmission of the request is received while in the "Proceeding" state, the most recently sent provisional response MUST be passed to the transport layer for retransmission.  If the TU passes a final response (status codes 200-699) to the server while in the "Proceeding" state, the transaction MUST enter the "Completed" state, and the response MUST be passed to the transport layer for transmission.
+"Trying" 상태일 때 TU가 서버 트랜잭션에 임시 응답을 전달하면 서버 트랜잭션은 반드시 "Proceeding" 상태가 되어야 한다.  응답은 전송을 위해 전송 계층으로 전달되어야 합니다.  "Proceeding" 상태인 동안 TU로부터 수신되는 모든 추가 임시 응답은 전송을 위해 전송 계층으로 전달되어야 한다.  "Proceeding" 상태에서 요청의 재전송이 수신되면 가장 최근에 전송된 잠정 응답이 전송 계층으로 전달되어 재전송되어야 한다.  TU가 "Proceeding" 상태에서 서버에 최종 응답(상태 코드 200-699)을 전달하면 트랜잭션은 "Completed" 상태가 되어야 하며, 응답은 전송을 위해 전송 계층으로 전달되어야 한다.
+
+> When the server transaction enters the "Completed" state, it MUST set Timer J to fire in 64*T1 seconds for unreliable transports, and zero seconds for reliable transports.  While in the "Completed" state, the server transaction MUST pass the final response to the transport layer for retransmission whenever a retransmission of the request is received.  Any other final responses passed by the TU to the server transaction MUST be discarded while in the "Completed" state.  The server transaction remains in this state until Timer J fires, at which point it MUST transition to the "Terminated" state.
+서버 트랜잭션이 "Completed" 상태가 되면, 불안정한 전송의 경우 64*T1초, 안정적인 전송의 경우 0초 후에 타이머 J가 실행되도록 설정해야 한다.  "Completed" 상태에 있는 동안 서버 트랜잭션은 요청의 재전송이 수신될 때마다 재전송을 위해 최종 응답을 전송 계층에 전달해야 한다.  TU가 서버 트랜잭션에 전달한 다른 모든 최종 응답은 "Completed" 상태일 때 폐기되어야 한다.  서버 트랜잭션은 타이머 J가 실행될 때까지 이 상태로 유지되며, 이 시점에서는 반드시 "Terminated" 상태로 전환되어야 한다.
+
+> The server transaction MUST be destroyed the instant it enters the "Terminated" state.
+서버 트랜잭션은 'Terminated' 상태가 되는 즉시 삭제되어야 한다.
+
+
+17.2.3 Matching Requests to Server Transactions
+
+> When a request is received from the network by the server, it has to be matched to an existing transaction.  This is accomplished in the following manner.
+서버가 네트워크에서 요청을 받으면 이를 기존 트랜잭션과 일치시켜야 한다.  이는 다음과 같은 방식으로 수행된다.
+
+> The branch parameter in the topmost Via header field of the request is examined.  If it is present and begins with the magic cookie "z9hG4bK", the request was generated by a client transaction compliant to this specification.  Therefore, the branch parameter will be unique across all transactions sent by that client.  The request matches a transaction if:
+요청의 최상위 Via 헤더 필드에 있는 분기 매개변수를 검사한다.  이 매개변수가 존재하고 매직 쿠키 "z9hG4bK"로 시작하면 이 사양을 준수하는 클라이언트 트랜잭션에 의해 요청이 생성된 것이다.  따라서 브랜치 매개변수는 해당 클라이언트가 전송한 모든 트랜잭션에서 고유하다.  요청이 트랜잭션과 일치하는 경우
+
+>	1. the branch parameter in the request is equal to the one in the top Via header field of the request that created the transaction, and
+	1. 요청의 브랜치 매개변수가 트랜잭션을 생성한 요청의 상단 Via 헤더 필드에 있는 매개변수와 같고,
+	
+>	2. the sent-by value in the top Via of the request is equal to the one in the request that created the transaction, and
+	2. 요청의 상단 Via에 있는 보낸 사람 값이 트랜잭션을 생성한 요청의 값과 같아야 한다.
+	
+>	3. the method of the request matches the one that created the transaction, except for ACK, where the method of the request that created the transaction is INVITE.
+	3. 요청의 메서드가 트랜잭션을 생성한 요청의 메서드와 일치한다(단, ACK는 트랜잭션을 생성한 요청의 메서드가 INVITE인 경우 제외).
+	
+> This matching rule applies to both INVITE and non-INVITE transactions alike.
+이 매칭 규칙은 INVITE 트랜잭션과 non-INVITE 트랜잭션 모두에 적용된다.
+
+>	The sent-by value is used as part of the matching process because there could be accidental or malicious duplication of branch parameters from different clients.
+	다른 클라이언트의 브랜치 매개변수가 실수로 또는 악의적으로 중복될 수 있으므로 전송된 값은 매칭 프로세스의 일부로 사용된다.
+	
+> If the branch parameter in the top Via header field is not present, or does not contain the magic cookie, the following procedures are used.  These exist to handle backwards compatibility with RFC 2543 compliant implementations.
+상단의 Via 헤더 필드에 브랜치 매개변수가 없거나 매직 쿠키가 포함되어 있지 않은 경우 다음 절차가 사용된다.  이는 RFC 2543을 준수하는 구현과의 하위 호환성을 처리하기 위해 존재한다.
+
+> The INVITE request matches a transaction if the Request-URI, To tag, From tag, Call-ID, CSeq, and top Via header field match those of the INVITE request which created the transaction.  In this case, the INVITE is a retransmission of the original one that created the transaction.  The ACK request matches a transaction if the Request- URI, From tag, Call-ID, CSeq number (not the method), and top Via header field match those of the INVITE request which created the transaction, and the To tag of the ACK matches the To tag of the response sent by the server transaction.  Matching is done based on the matching rules defined for each of those header fields. Inclusion of the tag in the To header field in the ACK matching process helps disambiguate ACK for 2xx from ACK for other responses at a proxy, which may have forwarded both responses (This can occur in unusual conditions.  Specifically, when a proxy forked a request, and then crashes, the responses may be delivered to another proxy, which might end up forwarding multiple responses upstream).  An ACK request that matches an INVITE transaction matched by a previous ACK is considered a retransmission of that previous ACK.
+Request-URI, To 태그, From 태그, Call-ID, CSeq 및 상단 Via 헤더 필드가 트랜잭션을 생성한 INVITE 요청의 필드와 일치하는 경우 INVITE 요청이 트랜잭션과 일치한다.  이 경우 INVITE는 트랜잭션을 생성한 원본의 재전송이다.  Request- URI, From 태그, Call-ID, CSeq 번호(메서드 아님), 상단 Via 헤더 필드가 트랜잭션을 생성한 INVITE 요청과 일치하고 ACK의 To 태그가 서버 트랜잭션에서 보낸 응답의 To 태그와 일치하면 ACK 요청은 트랜잭션과 일치한다.  매칭은 각 헤더 필드에 정의된 매칭 규칙에 따라 수행된다. ACK 매칭 프로세스에서 To 헤더 필드에 태그를 포함하면 두 응답을 모두 전달했을 수 있는 프록시에서 2xx에 대한 ACK와 다른 응답에 대한 ACK를 구분하는 데 도움이 된다(이는 비정상적인 조건에서 발생할 수 있다).  특히 프록시가 요청을 fork 했다가 충돌하는 경우 응답이 다른 프록시로 전달되어 여러 응답을 업스트림으로 전달하게 될 수 있다.)  이전 ACK에 의해 매칭된 INVITE 트랜잭션과 일치하는 ACK 요청은 이전 ACK의 재전송으로 간주된다.
+
+                                  |Request received
+                                  |pass to TU
+                                  V
+                            +-----------+
+                            |           |
+                            | Trying    |-------------+
+                            |           |             |
+                            +-----------+             |200-699 from TU
+                                  |                   |send response
+                                  |1xx from TU        |
+                                  |send response      |
+                                  |                   |
+               Request            V      1xx from TU  |
+               send response+-----------+send response|
+                   +--------|           |--------+    |
+                   |        | Proceeding|        |    |
+                   +------->|           |<-------+    |
+            +<--------------|           |             |
+            |Trnsprt Err    +-----------+             |
+            |Inform TU            |                   |
+            |                     |                   |
+            |                     |200-699 from TU    |
+            |                     |send response      |
+            |  Request            V                   |
+            |  send response+-----------+             |
+            |      +--------|           |             |
+            |      |        | Completed |<------------+
+            |      +------->|           |
+            +<--------------|           |
+            |Trnsprt Err    +-----------+
+            |Inform TU            |
+            |                     |Timer J fires
+            |                     |-
+            |                     |
+            |                     V
+            |               +-----------+
+            |               |           |
+            +-------------->| Terminated|
+                            |           |
+                            +-----------+
+
+				Figure 8: non-INVITE server transaction
+				
+> For all other request methods, a request is matched to a transaction if the Request-URI, To tag, From tag, Call-ID, CSeq (including the method), and top Via header field match those of the request that created the transaction.  Matching is done based on the matching rules defined for each of those header fields.  When a non-INVITE request matches an existing transaction, it is a retransmission of the request that created that transaction.
+다른 모든 요청 메서드의 경우 Request-URI, To 태그, From 태그, Call-ID, CSeq(메서드 포함) 및 상단 Via 헤더 필드가 트랜잭션을 생성한 요청의 필드와 일치하면 요청이 트랜잭션과 일치한다.  매칭은 각 헤더 필드에 정의된 매칭 규칙에 따라 수행된다.  non-INVITE 요청이 기존 트랜잭션과 일치하면 해당 트랜잭션을 만든 요청을 재전송하는 것이다.
+
+> Because the matching rules include the Request-URI, the server cannot match a response to a transaction.  When the TU passes a response to the server transaction, it must pass it to the specific server transaction for which the response is targeted.
+일치 규칙에 요청 URL이 포함되어 있으므로 서버는 트랜잭션에 대한 응답을 일치시킬 수 없다.  TU가 서버 트랜잭션에 응답을 전달할 때는 응답의 대상이 되는 특정 서버 트랜잭션으로 전달해야 한다.
+
+
+17.2.4 Handling Transport Errors
+
+> When the server transaction sends a response to the transport layer to be sent, the following procedures are followed if the transport layer indicates a failure.
+서버 트랜잭션이 전송 계층에 응답을 전송할 때 전송 계층이 실패를 표시하면 다음 절차를 따른다.
+
+> First, the procedures in [4] are followed, which attempt to deliver the response to a backup.  If those should all fail, based on the definition of failure in [4], the server transaction SHOULD inform the TU that a failure has occurred, and SHOULD transition to the terminated state.
+먼저 [4]의 절차에 따라 백업에 대한 응답을 전달하려고 시도한다.  이 모든 절차가 실패하면 [4]의 실패 정의에 따라 서버 트랜잭션은 TU에 실패가 발생했음을 알리고 종료된 상태로 전환해야 한다.
