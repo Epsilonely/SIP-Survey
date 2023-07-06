@@ -546,4 +546,269 @@ Each of the above steps are detailed below:
 >		After performing the processing described in steps "Aggregate Authorization Header Field Values" through "Record-Route", the proxy MAY perform any feature specific manipulations on the selected response.  The proxy MUST NOT add to, modify, or remove the message body.  Unless otherwise specified, the proxy MUST NOT remove any header field values other than the Via header field value discussed in Section 16.7 Item 3.  In particular, the proxy MUST NOT remove any "received" parameter it may have added to the next Via header field value while processing the request associated with this response.  The proxy MUST pass the response to the server transaction associated with the response context.  This will result in the response being sent to the location now indicated in the topmost Via header field value.  If the server transaction is no longer available to handle the transmission, the element MUST forward the response statelessly by sending it to the server transport.  The server transaction might indicate failure to send the response or signal a timeout in its state machine.  These errors would be logged for diagnostic purposes as appropriate, but the protocol requires no remedial action from the proxy.
 		"Aggregate Authorization Header Field Values"에서 "Record-Route" 단계에 설명된 처리를 수행한 후 프록시는 선택한 응답에 대해 기능별 조작을 수행할 수 있다.  프록시는 메시지 본문을 추가, 수정 또는 제거해서는 안 됩니다.  달리 명시되지 않는 한, 프록시는 섹션 16.7 항목 3에 설명된 Via 헤더 필드 값 이외의 헤더 필드 값을 제거해서는 안 된다.  특히 프록시는 이 응답과 관련된 요청을 처리하는 동안 다음 Via 헤더 필드 값에 추가했을 수 있는 "received" 매개변수를 제거해서는 안 된다.  프록시는 응답 컨텍스트와 연관된 서버 트랜잭션에 응답을 전달해야 한다.  이렇게 하면 응답이 현재 최상위 Via 헤더 필드 값에 표시된 위치로 전송된다.  서버 트랜잭션이 더 이상 전송을 처리할 수 없는 경우 요소는 응답을 서버 전송으로 전송하여 상태 비저장 방식으로 응답을 전달해야 한다.  서버 트랜잭션은 응답을 전송하지 못했음을 나타내거나 상태 머신에서 시간 초과를 알릴 수 있다.  이러한 오류는 진단 목적으로 적절히 기록되지만 프로토콜은 프록시에서 해결 조치를 취할 필요가 없다.
 		
+>		The proxy MUST maintain the response context until all of its associated transactions have been terminated, even after forwarding a final response.
+		프록시는 최종 응답을 전달한 후에도 관련된 모든 트랜잭션이 종료될 때까지 응답 컨텍스트를 유지해야 한다.
 		
+	10. Generate CANCELs
+
+>		If the forwarded response was a final response, the proxy MUST generate a CANCEL request for all pending client transactions associated with this response context.  A proxy SHOULD also generate a CANCEL request for all pending client transactions associated with this response context when it receives a 6xx response.  A pending client transaction is one that has received a provisional response, but no final response (it is in the proceeding state) and has not had an associated CANCEL generated for it.  Generating CANCEL requests is described in Section 9.1.
+		전달된 응답이 최종 응답인 경우 프록시는 이 응답 컨텍스트와 연관된 모든 보류 중인 클라이언트 트랜잭션에 대해 CANCEL 요청을 생성해야 한다.  또한 프록시는 6xx 응답을 받으면 이 응답 컨텍스트와 연관된 모든 보류 중인 클라이언트 트랜잭션에 대한 CANCEL 요청을 생성해야 한다.  보류 중인 클라이언트 트랜잭션은 임시 응답을 받았지만 최종 응답이 없는(진행 중 상태) 트랜잭션으로, 관련 CANCEL이 생성되지 않은 트랜잭션이다.  CANCEL 요청 생성은 섹션 9.1에 설명되어 있다.
+		
+>		The requirement to CANCEL pending client transactions upon forwarding a final response does not guarantee that an endpoint will not receive multiple 200 (OK) responses to an INVITE.  200 (OK) responses on more than one branch may be generated before the CANCEL requests can be sent and processed.  Further, it is reasonable to expect that a future extension may override this requirement to issue CANCEL requests.
+		최종 응답을 전달할 때 보류 중인 클라이언트 트랜잭션을 CANCEL해야 한다는 요건이 엔드포인트가 INVITE에 대해 여러 개의 200(OK) 응답을 받지 않는다는 것을 보장하지는 않는다.  CANCEL 요청이 전송되어 처리되기 전에 하나 이상의 브랜치에서 200(OK) 응답이 생성될 수 있다.  또한, 향후 확장을 통해 이 요건을 무시하고 CANCEL 요청을 발행할 수 있을 것으로 예상하는 것이 합리적이다.
+		
+
+16.8 Processing Timer C
+
+> If timer C should fire, the proxy MUST either reset the timer with any value it chooses, or terminate the client transaction.  If the client transaction has received a provisional response, the proxy MUST generate a CANCEL request matching that transaction.  If the client transaction has not received a provisional response, the proxy MUST behave as if the transaction received a 408 (Request Timeout) response.
+타이머 C가 발동해야 하는 경우 프록시는 타이머를 원하는 값으로 재설정하거나 클라이언트 트랜잭션을 종료해야 한다.  클라이언트 트랜잭션이 임시 응답을 받은 경우 프록시는 해당 트랜잭션과 일치하는 CANCEL 요청을 생성해야 한다.  클라이언트 트랜잭션이 임시 응답을 받지 못한 경우 프록시는 트랜잭션이 408(Request Timeout) 응답을 받은 것처럼 동작해야 한다.
+
+> Allowing the proxy to reset the timer allows the proxy to dynamically extend the transaction's lifetime based on current conditions (such as utilization) when the timer fires.
+프록시가 타이머를 재설정할 수 있도록 허용하면 타이머가 실행될 때 현재 조건(예: 사용률)에 따라 트랜잭션의 수명을 동적으로 연장할 수 있다.
+
+
+16.9 Handling Transport Errors
+
+> If the transport layer notifies a proxy of an error when it tries to forward a request (see Section 18.4), the proxy MUST behave as if the forwarded request received a 503 (Service Unavailable) response.	
+전송 계층이 요청을 전달하려고 할 때 프록시에 오류를 알리는 경우(섹션 18.4 참조), 프록시는 전달된 요청이 503(Service Unavailable) 응답을 받은 것처럼 동작해야 한다.	
+
+> If the proxy is notified of an error when forwarding a response, it drops the response.  The proxy SHOULD NOT cancel any outstanding client transactions associated with this response context due to this notification.
+프록시가 응답을 전달할 때 오류 알림을 받으면 응답을 삭제한다.  프록시는 이 알림으로 인해 이 응답 컨텍스트와 관련된 미결 클라이언트 트랜잭션을 취소해서는 안 된다.
+
+>	If a proxy cancels its outstanding client transactions, a single malicious or misbehaving client can cause all transactions to fail through its Via header field.
+	프록시가 미결 클라이언트 트랜잭션을 취소하는 경우, 악의적이거나 잘못된 동작을 하는 단일 클라이언트로 인해 Via 헤더 필드를 통해 모든 트랜잭션이 실패할 수 있다.
+
+
+16.10 CANCEL Processing
+
+> A stateful proxy MAY generate a CANCEL to any other request it has generated at any time (subject to receiving a provisional response to that request as described in section 9.1).  A proxy MUST cancel any pending client transactions associated with a response context when it receives a matching CANCEL request.
+stateful 프록시는 언제든지 자신이 생성한 다른 요청에 대해 CANCEL을 생성할 수 있다(섹션 9.1에 설명된 대로 해당 요청에 대한 임시 응답을 수신하는 것을 전제로 함).  프록시는 일치하는 CANCEL 요청을 받으면 응답 컨텍스트와 관련된 보류 중인 클라이언트 트랜잭션을 모두 취소해야 한다.
+
+> A stateful proxy MAY generate CANCEL requests for pending INVITE client transactions based on the period specified in the INVITE's Expires header field elapsing.  However, this is generally unnecessary since the endpoints involved will take care of signaling the end of the transaction.
+stateful 프록시는 초대의 Expires 헤더 필드에 지정된 기간 경과에 따라 보류 중인 INVITE 클라이언트 트랜잭션에 대한 CANCEL 요청을 생성할 수 있다.  그러나 일반적으로 관련 엔드포인트가 트랜잭션의 종료 신호를 처리하므로 이 작업은 필요하지 않는다.
+
+> While a CANCEL request is handled in a stateful proxy by its own server transaction, a new response context is not created for it. Instead, the proxy layer searches its existing response contexts for the server transaction handling the request associated with this CANCEL.  If a matching response context is found, the element MUST immediately return a 200 (OK) response to the CANCEL request.  In this case, the element is acting as a user agent server as defined in Section 8.2.  Furthermore, the element MUST generate CANCEL requests for all pending client transactions in the context as described in Section 16.7 step 10.
+stateful 프록시에서 자체 서버 트랜잭션에 의해 CANCEL 요청이 처리되는 동안에는 새로운 응답 컨텍스트가 생성되지 않는다. 대신, 프록시 계층은 기존 응답 컨텍스트에서 이 CANCEL 요청과 관련된 요청을 처리하는 서버 트랜잭션을 검색한다.  일치하는 응답 컨텍스트가 발견되면 요소는 즉시 CANCEL 요청에 대해 200(OK) 응답을 반환해야 한다.  이 경우 엘리먼트는 섹션 8.2에 정의된 대로 UAS 역할을 한다.  또한 요소는 섹션 16.7 10단계에 설명된 대로 컨텍스트에서 보류 중인 모든 클라이언트 트랜잭션에 대해 CANCEL 요청을 생성해야 한다.
+
+> If a response context is not found, the element does not have any knowledge of the request to apply the CANCEL to.  It MUST statelessly forward the CANCEL request (it may have statelessly forwarded the associated request previously).
+응답 컨텍스트를 찾을 수 없는 경우 요소는 CANCEL을 적용할 요청에 대한 지식이 없다.  이 요소는 반드시 CANCEL 요청을 상태 statelessly로 전달해야 한다(이전에 관련 요청을 상태 statelessly로 전달했을 수 있음).
+
+
+16.11 Stateless Proxy
+
+> When acting statelessly, a proxy is a simple message forwarder.  Much of the processing performed when acting statelessly is the same as when behaving statefully.  The differences are detailed here.
+statelessly 방식으로 작동할 때 프록시는 단순한 메시지 전달자 역할을 한다.  statelessly 방식으로 동작할 때 수행되는 대부분의 처리는 stateful 방식으로 동작할 때와 동일하다.  차이점은 여기에 자세히 설명되어 있다.
+
+> A stateless proxy does not have any notion of a transaction, or of the response context used to describe stateful proxy behavior. Instead, the stateless proxy takes messages, both requests and responses, directly from the transport layer (See section 18).  As a result, stateless proxies do not retransmit messages on their own. They do, however, forward all retransmissions they receive (they do not have the ability to distinguish a retransmission from the original message).  Furthermore, when handling a request statelessly, an element MUST NOT generate its own 100 (Trying) or any other provisional response.
+stateless 프록시에는 트랜잭션이나 stateful 프록시 동작을 설명하는 데 사용되는 응답 컨텍스트에 대한 개념이 없다. 대신, stateless 프록시는 요청과 응답 모두 전송 계층에서 직접 메시지를 가져온다(섹션 18 참조).  따라서 stateless 프록시는 자체적으로 메시지를 재전송하지 않는다. 그러나 수신한 모든 재전송을 전달한다(재전송과 원본 메시지를 구분할 수 있는 기능이 없음).  또한 요청을 stateless 상태로 처리할 때 요소는 자체적으로 100(Triying) 또는 기타 임시 응답을 생성해서는 안 된다.
+
+> A stateless proxy MUST validate a request as described in Section 16.3 
+stateless 프록시는 섹션 16.3에 설명된 대로 요청의 유효성을 검사해야 한다. 
+
+> A stateless proxy MUST follow the request processing steps described in Sections 16.4 through 16.5 with the following exception:
+stateless 프록시는 다음 예외를 제외하고 섹션 16.4~16.5에 설명된 요청 처리 단계를 따라야 한다:
+
+>	A stateless proxy MUST choose one and only one target from the target set.  This choice MUST only rely on fields in the message and time-invariant properties of the server.  In particular, a retransmitted request MUST be forwarded to the same destination each time it is processed.  Furthermore, CANCEL and non-Routed ACK requests MUST generate the same choice as their associated INVITE.
+	o	stateless 프록시는 반드시 대상 집합에서 하나의 대상만 선택해야 한다.  이 선택은 메시지의 필드와 서버의 time-invariant 속성에만 의존해야 한다.  특히 재전송된 요청은 처리될 때마다 동일한 대상으로 전달되어야 한다.  또한 CANCEL 및 라우팅되지 않은 ACK 요청은 연결된 INVITE와 동일한 선택을 생성해야 한다.
+	
+> A stateless proxy MUST follow the request processing steps described in Section 16.6 with the following exceptions:
+stateless 프록시는 다음과 같은 예외를 제외하고 섹션 16.6에 설명된 요청 처리 단계를 따라야 한다:
+
+>	The requirement for unique branch IDs across space and time applies to stateless proxies as well.  However, a stateless proxy cannot simply use a random number generator to compute the first component of the branch ID, as described in Section 16.6 bullet 8.  This is because retransmissions of a request need to have the same value, and a stateless proxy cannot tell a retransmission from the original request.  Therefore, the component of the branch parameter that makes it unique MUST be the same each time a retransmitted request is forwarded.  Thus for a stateless proxy, the branch parameter MUST be computed as a combinatoric function of message parameters which are invariant on retransmission.
+	o	시공간을 초월한 고유한 브랜치 ID에 대한 요건은 stateless 프록시에도 적용된다.  그러나 stateless 프록시는 섹션 16.6 글머리 기호 8에 설명된 대로 단순히 난수 생성기를 사용하여 브랜치 ID의 첫 번째 구성 요소를 계산할 수 없다.  요청의 재전송은 동일한 값을 가져야 하며, stateless 프록시는 원래 요청과 재전송을 구분할 수 없기 때문이다.  따라서 재전송 요청이 전달될 때마다 브랜치 파라미터를 고유하게 만드는 구성 요소는 반드시 동일해야 한다.  따라서 stateless 프록시의 경우 브랜치 파라미터는 재전송 시 변하지 않는 메시지 파라미터의 조합 함수로 계산되어야 한다.
+	
+>	The stateless proxy MAY use any technique it likes to guarantee uniqueness of its branch IDs across transactions.  However, the following procedure is RECOMMENDED.  The proxy examines the branch ID in the topmost Via header field of the received request.  If it begins with the magic cookie, the first component of the branch ID of the outgoing request is computed as a hash of the received branch ID.  Otherwise, the first component of the branch ID is computed as a hash of the topmost Via, the tag in the To header field, the tag in the From header field, the Call-ID header field, the CSeq number (but not method), and the Request-URI from the received request.  One of these fields will always vary across two different transactions.
+		stateless 프록시는 거래 전반에 걸쳐 브랜치 ID의 고유성을 보장하기 위해 원하는 기술을 사용할 수 있다.  그러나 다음 절차를 권장한다.  프록시는 수신된 요청의 최상위 Via 헤더 필드에 있는 브랜치 ID를 검사한다.  매직 쿠키로 시작하면 발신 요청의 브랜치 ID의 첫 번째 구성요소가 수신된 브랜치 ID의 해시로 계산된다.  그렇지 않으면 브랜치 ID의 첫 번째 구성 요소는 수신된 요청의 최상위 Via, To 태그, From 태그, Call-ID 헤더 필드, CSeq 번호(메서드는 아님), Request-URI의 해시로 계산된다.  이러한 필드 중 하나는 항상 두 개의 서로 다른 트랜잭션에 따라 달라진다.
+	
+>	All other message transformations specified in Section 16.6 MUST result in the same transformation of a retransmitted request.  In particular, if the proxy inserts a Record-Route value or pushes URIs into the Route header field, it MUST place the same values in retransmissions of the request.  As for the Via branch parameter, this implies that the transformations MUST be based on time-invariant configuration or retransmission-invariant properties of the request.
+	o	섹션 16.6에 명시된 다른 모든 메시지 변환은 반드시 재전송 요청의 동일한 변환을 초래해야 한다.  특히 프록시가 Record-Route 값을 삽입하거나 Route 헤더 필드에 URI를 푸시하는 경우, 요청의 재전송에 동일한 값을 넣어야 한다.  Via 브랜치 매개변수의 경우, 이는 변환이 요청의 시간 불변 구성 또는 재전송 불변 속성을 기반으로 해야 함을 의미한다.
+	
+>	A stateless proxy determines where to forward the request as described for stateful proxies in Section 16.6 Item 10.  The request is sent directly to the transport layer instead of through a client transaction.
+	o	stateless 프록시는 섹션 16.6 항목 10의 stateful 프록시에 대해 설명한 대로 요청을 전달할 위치를 결정한다.  요청은 클라이언트 트랜잭션을 거치지 않고 전송 계층으로 직접 전송된다.
+	
+>	Since a stateless proxy must forward retransmitted requests to the same destination and add identical branch parameters to each of them, it can only use information from the message itself and time-invariant configuration data for those calculations.  If the configuration state is not time-invariant (for example, if a routing table is updated) any requests that could be affected by the change may not be forwarded statelessly during an interval equal to the transaction timeout window before or after the change.  The method of processing the affected requests in that interval is an implementation decision.  A common solution is to forward them transaction statefully.
+		stateless 프록시는 재전송된 요청을 동일한 대상으로 전달하고 각 요청에 동일한 분기 매개변수를 추가해야 하므로, 이러한 계산에는 메시지 자체의 정보와 시간 불변 구성 데이터만 사용할 수 있다.  구성 상태가 시간 불변이 아닌 경우(예: 라우팅 테이블이 업데이트되는 경우) 변경의 영향을 받을 수 있는 모든 요청은 변경 전후의 트랜잭션 시간 초과 창과 동일한 간격 동안 상태 비저장 방식으로 전달되지 않을 수 있다.  해당 간격 동안 영향을 받는 요청을 처리하는 방법은 구현자가 결정한다.  일반적인 해결책은 트랜잭션을 stateful로 전달하는 것이다.
+		
+> Stateless proxies MUST NOT perform special processing for CANCEL requests.  They are processed by the above rules as any other requests.  In particular, a stateless proxy applies the same Route header field processing to CANCEL requests that it applies to any other request.
+Stateless 프록시는 CANCEL 요청에 대해 특별한 처리를 수행해서는 안 된다.  다른 요청과 마찬가지로 위의 규칙에 따라 처리된다.  특히 CANCEL 프록시는 다른 요청에 적용하는 것과 동일한 Route 헤더 필드 처리를 CANCEL 요청에 적용한다.
+
+> Response processing as described in Section 16.7 does not apply to a proxy behaving statelessly.  When a response arrives at a stateless proxy, the proxy MUST inspect the sent-by value in the first (topmost) Via header field value.  If that address matches the proxy, (it equals a value this proxy has inserted into previous requests) the proxy MUST remove that header field value from the response and forward the result to the location indicated in the next Via header field value.  The proxy MUST NOT add to, modify, or remove the message body.  Unless specified otherwise, the proxy MUST NOT remove any other header field values.  If the address does not match the proxy, the message MUST be silently discarded.
+섹션 16.7에 설명된 응답 처리는 stateless 방식으로 동작하는 프록시에는 적용되지 않는다.  stateless 프록시에 응답이 도착하면 프록시는 첫 번째(맨 위) Via 헤더 필드 값에서 보낸 사람 값을 검사해야 한다.  해당 주소가 프록시와 일치하는 경우(프록시가 이전 요청에 삽입한 값과 동일) 프록시는 응답에서 해당 헤더 필드 값을 제거하고 결과를 다음 Via 헤더 필드 값에 표시된 위치로 전달해야 한다.  프록시는 메시지 본문을 추가, 수정 또는 제거해서는 안 된다.  달리 명시되지 않는 한 프록시는 다른 헤더 필드 값을 제거해서는 안 된다.  주소가 프록시와 일치하지 않으면 메시지를 자동으로 삭제해야 한다.
+
+
+16.12 Summary of Proxy Route Processing
+
+> In the absence of local policy to the contrary, the processing a proxy performs on a request containing a Route header field can be summarized in the following steps.
+이와 반대되는 로컬 정책이 없는 경우 프록시가 Route 헤더 필드가 포함된 요청에 대해 수행하는 처리는 다음 단계로 요약할 수 있다.
+
+>	1. The proxy will inspect the Request-URI.  If it indicates a resource owned by this proxy, the proxy will replace it with the results of running a location service.  Otherwise, the proxy will not change the Request-URI.
+	1. 프록시가 Request-URI를 검사한다.  이 프록시가 소유한 리소스를 가리키는 경우 프록시는 위치 서비스를 실행한 결과로 대체한다.  그렇지 않으면 프록시는 Request-URI를 변경하지 않는다.
+	
+>	2. The proxy will inspect the URI in the topmost Route header field value.  If it indicates this proxy, the proxy removes it from the Route header field (this route node has been reached).
+	2. 프록시는 최상위 Route 헤더 필드 값의 URI를 검사한다.  이 프록시가 표시되면 프록시는 Route 헤더 필드에서 해당 프록시를 제거한다(이 경로 노드에 도달했다).
+	
+>	3.  The proxy will forward the request to the resource indicated by the URI in the topmost Route header field value or in the Request-URI if no Route header field is present.  The proxy determines the address, port and transport to use when forwarding the request by applying the procedures in [4] to that URI.
+	3.  프록시는 최상위 Route 헤더 필드 값에 있는 URI로 표시된 리소스로 요청을 전달하거나, Route 헤더 필드가 없는 경우 Request-URI로 요청을 전달한다.  프록시는 [4]의 절차를 해당 URI에 적용하여 요청을 전달할 때 사용할 주소, 포트 및 전송을 결정한다.
+	
+If no strict-routing elements are encountered on the path of the request, the Request-URI will always indicate the target of the request.
+요청 경로에 엄격한 라우팅 요소가 없는 경우 Request-URI는 항상 요청의 대상을 나타낸다.
+
+
+16.12.1 Examples
+
+16.12.1.1 Basic SIP Trapezoid
+
+> This scenario is the basic SIP trapezoid, U1 -> P1 -> P2 -> U2, with both proxies record-routing.  Here is the flow.
+이 시나리오는 두 프록시 모두 레코드 라우팅을 하는 기본 SIP trapezoid(U1 -> P1 -> P2 -> U2)이다.  흐름은 다음과 같다.
+
+U1 sends:
+
+	INVITE sip:callee@domain.com SIP/2.0
+	Contact: sip:caller@u1.example.com
+	
+> to P1.  P1 is an outbound proxy.  P1 is not responsible for domain.com, so it looks it up in DNS and sends it there.  It also adds a Record-Route header field value:
+을 P1으로 전송한다.  P1은 아웃바운드 프록시이다.  P1은 domain.com에 대한 책임이 없으므로 DNS에서 이를 찾아서 그곳으로 보낸다.  또한 Record-Route 헤더 필드 값도 추가:
+
+	INVITE sip:callee@domain.com SIP/2.0
+	Contact: sip:caller@u1.example.com
+	Record-Route: <sip:p1.example.com;lr>
+	
+> P2 gets this.  It is responsible for domain.com so it runs a location service and rewrites the Request-URI.  It also adds a Record-Route header field value.  There is no Route header field, so it resolves the new Request-URI to determine where to send the request:
+P2가 이를 받는다.  도메인닷컴을 담당하므로 위치 서비스를 실행하고 Request-URI를 다시 작성한다.  또한 Record-Route 헤더 필드 값을 추가한다.  Route 헤더 필드가 없으므로 새 Request-URI를 확인하여 요청을 보낼 위치를 결정:
+
+	INVITE sip:callee@u2.domain.com SIP/2.0
+	Contact: sip:caller@u1.example.com
+	Record-Route: <sip:p2.domain.com;lr>
+	Record-Route: <sip:p1.example.com;lr>
+
+The callee at u2.domain.com gets this and responds with a 200 OK:
+
+	SIP/2.0 200 OK
+	Contact: sip:callee@u2.domain.com
+	Record-Route: <sip:p2.domain.com;lr>
+	Record-Route: <sip:p1.example.com;lr>
+	
+> The callee at u2 also sets its dialog state's remote target URI to sip:caller@u1.example.com and its route set to:
+또한 u2의 발신자는 다이얼로그 상태의 원격 대상 URI를 sip:caller@u1.example.com 로 설정하고 경로를 다음과 같이 설정:
+
+	(<sip:p2.domain.com;lr>,<sip:p1.example.com;lr>)
+	
+> This is forwarded by P2 to P1 to U1 as normal.  Now, U1 sets its dialog state's remote target URI to sip:callee@u2.domain.com and its route set to:
+이는 정상적으로 P2에서 P1으로 전달되어 U1으로 전달된다.  이제 U1은 다이얼로그 상태의 원격 대상 URI를 sip:callee@u2.domain.com 로 설정하고 경로를 다음과 같이 설정한다:
+
+	(<sip:p1.example.com;lr>,<sip:p2.domain.com;lr>)
+	
+> Since all the route set elements contain the lr parameter, U1 constructs the following BYE request:
+모든 route set 요소에 lr 매개변수가 포함되어 있으므로 U1은 다음과 같은 BYE 요청을 구성:
+
+	BYE sip:callee@u2.domain.com SIP/2.0
+	Route: <sip:p1.example.com;lr>,<sip:p2.domain.com;lr>
+	
+> As any other element (including proxies) would do, it resolves the URI in the topmost Route header field value using DNS to determine where to send the request.  This goes to P1.  P1 notices that it is not responsible for the resource indicated in the Request-URI so it doesn't change it.  It does see that it is the first value in the Route header field, so it removes that value, and forwards the request to P2:
+다른 요소(프록시 포함)와 마찬가지로 DNS를 사용하여 최상위 Route 헤더 필드 값의 URI를 확인하여 요청을 전송할 위치를 결정한다.  이 요청은 P1으로 전달된다.  P1은 Request-URI에 표시된 리소스에 대한 책임이 없으므로 이를 변경하지 않는다.  하지만 해당 값이 Route 헤더 필드의 첫 번째 값임을 확인하므로 해당 값을 제거하고 요청을 P2로 전달:
+
+	BYE sip:callee@u2.domain.com SIP/2.0
+	Route: <sip:p2.domain.com;lr>
+	
+> P2 also notices it is not responsible for the resource indicated by the Request-URI (it is responsible for domain.com, not u2.domain.com), so it doesn't change it.  It does see itself in the first Route header field value, so it removes it and forwards the following to u2.domain.com based on a DNS lookup against the Request-URI:
+P2는 또한 Request-URI로 표시된 리소스에 대한 책임이 없음을 알기 때문에(u2.domain.com이 아니라 domain.com에 대한 책임이 있음) 이를 변경하지 않는다.  하지만 첫 번째 Route 헤더 필드 값에서 자신을 확인하므로 이를 제거하고 Request-URI에 대한 DNS 조회를 기반으로 다음을 u2.domain.com으로 전달:
+
+	BYE sip:callee@u2.domain.com SIP/2.0
+
+	
+16.12.1.2 Traversing a Strict-Routing Proxy
+
+> In this scenario, a dialog is established across four proxies, each of which adds Record-Route header field values.  The third proxy implements the strict-routing procedures specified in RFC 2543 and many works in progress.
+이 시나리오에서는 네 개의 프록시에 걸쳐 다이얼로그가 설정되며, 각 프록시는 Record-Route 헤더 필드 값을 추가한다.  세 번째 프록시는 RFC 2543에 명시된 엄격한 라우팅 절차를 구현하며 많은 작업이 진행 중이다.
+
+	U1->P1->P2->P3->P4->U2
+	
+The INVITE arriving at U2 contains:
+
+	INVITE sip:callee@u2.domain.com SIP/2.0
+	Contact: sip:caller@u1.example.com
+	Record-Route: <sip:p4.domain.com;lr>
+	Record-Route: <sip:p3.middle.com>
+	Record-Route: <sip:p2.example.com;lr>
+	Record-Route: <sip:p1.example.com;lr>
+	
+> Which U2 responds to with a 200 OK.  Later, U2 sends the following BYE request to P4 based on the first Route header field value.
+U2가 200 OK로 응답한다.  나중에 U2는 첫 번째 Route 헤더 필드 값을 기반으로 다음 BYE 요청을 P4에 보낸다.
+
+	BYE sip:caller@u1.example.com SIP/2.0
+	Route: <sip:p4.domain.com;lr>
+	Route: <sip:p3.middle.com>
+	Route: <sip:p2.example.com;lr>
+	Route: <sip:p1.example.com;lr>
+	
+> P4 is not responsible for the resource indicated in the Request-URI so it will leave it alone.  It notices that it is the element in the first Route header field value so it removes it.  It then prepares to send the request based on the now first Route header field value of sip:p3.middle.com, but it notices that this URI does not contain the lr parameter, so before sending, it reformats the request to be:
+P4는 Request-URI에 표시된 리소스에 대한 책임이 없으므로 그대로 둔다.  첫 번째 Route 헤더 필드 값에 있는 요소라는 것을 알아차리고 제거한다.  그런 다음 이제 첫 번째 경로 헤더 필드 값인 sip:p3.middle.com을 기반으로 요청을 전송할 준비를 하지만 이 URI에 lr 매개 변수가 포함되어 있지 않다는 것을 알아차리고 전송하기 전에 요청의 형식을 다시 지정:
+
+	BYE sip:p3.middle.com SIP/2.0
+	Route: <sip:p2.example.com;lr>
+	Route: <sip:p1.example.com;lr>
+	Route: <sip:caller@u1.example.com>
+
+P3 is a strict router, so it forwards the following to P2:
+
+	BYE sip:p2.example.com;lr SIP/2.0
+	Route: <sip:p1.example.com;lr>
+	Route: <sip:caller@u1.example.com>
+	
+> P2 sees the request-URI is a value it placed into a Record-Route header field, so before further processing, it rewrites the request to be:
+P2는 request-URI가 Record-Route 헤더 필드에 배치한 값임을 확인하므로 추가 처리 전에 요청을 다음과 같이 재작성:
+
+	BYE sip:caller@u1.example.com SIP/2.0
+	Route: <sip:p1.example.com;lr>
+	
+> P2 is not responsible for u1.example.com, so it sends the request to P1 based on the resolution of the Route header field value.	
+P2는 u1.example.com에 대한 책임이 없으므로 Route 헤더 필드 값의 해상도에 따라 요청을 P1에 보낸다.
+
+> P1 notices itself in the topmost Route header field value, so it removes it, resulting in:
+P1은 최상위 Route 헤더 필드 값에서 자신을 알아차리고 이를 제거하여 다음과 같이 만든다:
+
+	BYE sip:caller@u1.example.com SIP/2.0
+	
+> Since P1 is not responsible for u1.example.com and there is no Route header field, P1 will forward the request to u1.example.com based on the Request-URI.
+P1은 u1.example.com에 대한 책임이 없고 Route 헤더 필드가 없으므로 Request-URI를 기반으로 요청을 u1.example.com으로 전달한다.
+
+
+16.12.1.3 Rewriting Record-Route Header Field Values
+
+> In this scenario, U1 and U2 are in different private namespaces and they enter a dialog through a proxy P1, which acts as a gateway between the namespaces.
+이 시나리오에서 U1과 U2는 서로 다른 프라이빗 네임스페이스에 있으며 네임스페이스 간의 게이트웨이 역할을 하는 프록시 P1을 통해 다이얼로그로 들어간다.
+
+	U1->P1->U2
+	
+U1 sends:
+
+	INVITE sip:callee@gateway.leftprivatespace.com SIP/2.0
+	Contact: <sip:caller@u1.leftprivatespace.com>
+	
+P1 uses its location service and sends the following to U2:
+
+	INVITE sip:callee@rightprivatespace.com SIP/2.0
+	Contact: <sip:caller@u1.leftprivatespace.com>
+	Record-Route: <sip:gateway.rightprivatespace.com;lr>
+	
+U2 sends this 200 (OK) back to P1:
+
+	SIP/2.0 200 OK
+	Contact: <sip:callee@u2.rightprivatespace.com>
+	Record-Route: <sip:gateway.rightprivatespace.com;lr>
+	
+> P1 rewrites its Record-Route header parameter to provide a value that U1 will find useful, and sends the following to U1:
+P1은 U1이 유용하게 사용할 수 있는 값을 제공하도록 Record-Route 헤더 매개변수를 다시 작성하고 다음을 U1에 보낸다:
+
+	SIP/2.0 200 OK
+	Contact: <sip:callee@u2.rightprivatespace.com>
+	Record-Route: <sip:gateway.leftprivatespace.com;lr>
+	
+Later, U1 sends the following BYE request to P1:
+
+	BYE sip:callee@u2.rightprivatespace.com SIP/2.0
+	Route: <sip:gateway.leftprivatespace.com;lr>
+	
+which P1 forwards to U2 as:
+
+	BYE sip:callee@u2.rightprivatespace.com SIP/2.0
