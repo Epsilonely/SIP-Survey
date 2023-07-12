@@ -104,7 +104,7 @@ T1의 기본값은 500ms이다.  T1은 클라이언트와 서버 트랜잭션 �
                             |  |1xx                  |
     300-699 +---------------+  |1xx to TU            |
    ACK sent |                  |                     |
- resp. to TU |  1xx             V                     |
+ resp to TU |  1xx             V                     |
             |  1xx to TU  -----------+               |
             |  +---------|           |               |
             |  |         |Proceeding |-------------->|
@@ -112,7 +112,7 @@ T1의 기본값은 500ms이다.  T1은 클라이언트와 서버 트랜잭션 �
             |            +-----------+ 2xx to TU     |
             |       300-699    |                     |
             |       ACK sent,  |                     |
-            |       resp. to TU|                     |
+            |       resp to TU |                     |
             |                  |                     |      NOTE:
             |  300-699         V                     |
             |  ACK sent  +-----------+Transport Err. |  transitions
@@ -149,7 +149,7 @@ T1의 기본값은 500ms이다.  T1은 클라이언트와 서버 트랜잭션 �
 이 섹션에서는 클라이언트 트랜잭션 내에서 전송되는 ACK 요청의 구성을 지정한다.  2xx에 대한 ACK를 생성하는 UAC 코어는 대신 섹션 13에 설명된 규칙을 따라야 한다.
 
 > The ACK request constructed by the client transaction MUST contain values for the Call-ID, From, and Request-URI that are equal to the values of those header fields in the request passed to the transport by the client transaction (call this the "original request").  The To header field in the ACK MUST equal the To header field in the response being acknowledged, and therefore will usually differ from the To header field in the original request by the addition of the tag parameter.  The ACK MUST contain a single Via header field, and this MUST be equal to the top Via header field of the original request.  The CSeq header field in the ACK MUST contain the same value for the sequence number as was present in the original request, but the method parameter MUST be equal to "ACK".
-클라이언트 트랜잭션에 의해 구성된 ACK 요청에는 클라이언트 트랜잭션이 전송에 전달한 요청(이를 "원본 요청"이라고 함)의 헤더 필드 값과 동일한 Call-ID, 발신자 및 요청-URI 값이 포함되어야 한다.  ACK의 To 헤더 필드는 승인되는 응답의 To 헤더 필드와 같아야 하며, 따라서 일반적으로 태그 매개변수를 추가하여 원래 요청의 To 헤더 필드와 다를 수 있다.  ACK에는 하나의 Via 헤더 필드가 포함되어야 하며, 이 필드는 원본 요청의 최상위 Via 헤더 필드와 같아야 한다.  ACK의 CSeq 헤더 필드에는 원본 요청에 있는 시퀀스 번호와 동일한 값이 포함되어야 하지만 메서드 매개 변수는 "ACK"와 같아야 한다.
+클라이언트 트랜잭션에 의해 구성된 ACK 요청에는 클라이언트 트랜잭션이 전송에 전달한 요청(이를 "원본 요청"이라고 함)의 헤더 필드 값과 동일한 Call-ID, From 및 Request-URI 값이 포함되어야 한다.  ACK의 To 헤더 필드는 승인되는 응답의 To 헤더 필드와 같아야 하며, 따라서 일반적으로 태그 매개변수를 추가하여 원래 요청의 To 헤더 필드와 다를 수 있다.  ACK에는 하나의 Via 헤더 필드가 포함되어야 하며, 이 필드는 원본 요청의 최상위 Via 헤더 필드와 같아야 한다.  ACK의 CSeq 헤더 필드에는 원본 요청에 있는 시퀀스 번호와 동일한 값이 포함되어야 하지만 메서드 매개 변수는 "ACK"와 같아야 한다.
 
 > If the INVITE request whose response is being acknowledged had Route header fields, those header fields MUST appear in the ACK.  This is to ensure that the ACK can be routed properly through any downstream stateless proxies.
 응답이 확인되는 INVITE 요청에 Route 헤더 필드가 있는 경우, 해당 헤더 필드는 반드시 ACK에 표시되어야 한다.  이는 ACK가 다운스트림 stateless 프록시를 통해 올바르게 라우팅될 수 있도록 하기 위함이다.
@@ -311,7 +311,7 @@ TU는 서버 트랜잭션에 임시 응답을 얼마든지 전달할 수 있다.
 "Completed" 상태가 되면 모든 전송에 대해 64*T1초 후에 타이머 H가 실행되도록 설정해야 한다.  타이머 H는 서버 트랜잭션이 응답 재전송을 포기하는 시점을 결정한다.  이 값은 클라이언트 트랜잭션이 요청 전송을 계속 재시도하는 시간인 타이머 B와 같도록 선택된다.  타이머 G가 발동되면 응답은 재전송을 위해 전송 계층으로 한 번 더 전달되고 타이머 G는 MIN(2*T1, T2) 초 단위로 발동되도록 설정된다.  이후 타이머 G가 발동하면 응답은 전송을 위해 다시 전송 계층으로 전달되고 타이머 G는 두 배가 된 값으로 재설정된다(단, 해당 값이 T2를 초과하는 경우 T2의 값으로 재설정된다).  이는 초대하지 않은 클라이언트 트랜잭션의 "Trying" 상태에 있는 요청에 대한 재전송 동작과 동일한다.  또한 "Completed" 상태일 때 요청 재전송이 수신되면 서버는 재전송을 위해 응답을 전송에 전달해야 한다.
 
 > If an ACK is received while the server transaction is in the "Completed" state, the server transaction MUST transition to the "Confirmed" state.  As Timer G is ignored in this state, any retransmissions of the response will cease.
-서버 트랜잭션이 "Completed" 상태일 때 ACK를 받으면 서버 트랜잭션은 반드시 "Completed" 상태로 전환되어야 한다.  이 상태에서는 타이머 G가 무시되므로 응답의 모든 재전송이 중단된다.
+서버 트랜잭션이 "Completed" 상태일 때 ACK를 받으면 서버 트랜잭션은 반드시 "Confirmed" 상태로 전환되어야 한다.  이 상태에서는 타이머 G가 무시되므로 응답의 모든 재전송이 중단된다.
 
 >If timer H fires while in the "Completed" state, it implies that the ACK was never received.  In this case, the server transaction MUST transition to the "Terminated" state, and MUST indicate to the TU that a transaction failure has occurred.
 "Completed" 상태에서 타이머 H가 발동하면 ACK가 수신되지 않았음을 의미한다.  이 경우 서버 트랜잭션은 반드시 "Terminated" 상태로 전환되어야 하며, 트랜잭션 실패가 발생했음을 TU에 표시해야 한다.
