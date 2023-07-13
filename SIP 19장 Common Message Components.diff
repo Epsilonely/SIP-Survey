@@ -1,0 +1,46 @@
+19. Common Message Components
+
+> There are certain components of SIP messages that appear in various places within SIP messages (and sometimes, outside of them) that merit separate discussion.
+SIP 메시지 내 다양한 위치(때로는 메시지 외부)에 나타나는 특정 구성 요소에 대해 별도로 논의할 필요가 있다.
+
+
+19.1 SIP and SIPS Uniform Resource Indicators
+
+> A SIP or SIPS URI identifies a communications resource.  Like all URIs, SIP and SIPS URIs may be placed in web pages, email messages, or printed literature.  They contain sufficient information to initiate and maintain a communication session with the resource.
+SIP 또는 SIPS URI는 통신 리소스를 식별한다.  모든 URI와 마찬가지로 SIP 및 SIPS URI는 웹 페이지, 이메일 메시지 또는 인쇄물에 배치될 수 있다.  여기에는 리소스와의 통신 세션을 시작하고 유지하기에 충분한 정보가 포함되어 있다.
+
+Examples of communications resources include the following:
+
+	 a user of an online service
+	
+	 an appearance on a multi-line phone
+	
+	 a mailbox on a messaging system
+	
+	 a PSTN number at a gateway service
+	
+	 a group (such as "sales" or "helpdesk") in an organization
+	 
+> A SIPS URI specifies that the resource be contacted securely.  This means, in particular, that TLS is to be used between the UAC and the domain that owns the URI.  From there, secure communications are used to reach the user, where the specific security mechanism depends on the policy of the domain.  Any resource described by a SIP URI can be "upgraded" to a SIPS URI by just changing the scheme, if it is desired to communicate with that resource securely.
+SIPS URI는 리소스에 안전하게 연결하도록 지정한다.  이는 특히 UAC와 URI를 소유한 도메인 간에 TLS를 사용해야 함을 의미한다.  거기서부터 사용자에게 도달하기 위해 보안 통신이 사용되며, 특정 보안 메커니즘은 도메인의 정책에 따라 달라진다.  해당 리소스와 안전하게 통신하려면 스키마만 변경하여 SIP URI로 설명된 모든 리소스를 SIPS URI로 "업그레이드"할 수 있다.
+
+
+19.1.1 SIP and SIPS URI Components
+
+> The "sip:" and "sips:" schemes follow the guidelines in RFC 2396 [5]. They use a form similar to the mailto URL, allowing the specification of SIP request-header fields and the SIP message-body.  This makes it possible to specify the subject, media type, or urgency of sessions initiated by using a URI on a web page or in an email message.  The formal syntax for a SIP or SIPS URI is presented in Section 25.  Its general form, in the case of a SIP URI, is:
+"sip:" 및 "sips:" 스키마는 RFC 2396[5]의 지침을 따른다. mailto URL과 유사한 형식을 사용하며, SIP 요청 헤더 필드와 SIP 메시지 body을 지정할 수 있다.  이를 통해 웹 페이지나 이메일 메시지에서 URI를 사용하여 시작된 세션의 제목, 미디어 유형 또는 긴급도를 지정할 수 있다.  SIP 또는 SIPS URI의 공식 구문은 섹션 25에 나와 있다.  SIP URI의 경우 일반적인 형식은 다음과 같다:
+
+	sip:user:password@host:port;uri-parameters?headers
+	
+> The format for a SIPS URI is the same, except that the scheme is "sips" instead of sip.  These tokens, and some of the tokens in their expansions, have the following meanings:
+SIPS URI의 형식은 sip 대신 "sips"라는 점을 제외하면 동일하다.  이러한 토큰과 그 확장에 포함된 일부 토큰은 다음과 같은 의미를 가진다:
+
+	user: The identifier of a particular resource at the host being
+		addressed.  The term "host" in this context frequently refers
+		to a domain.  The "userinfo" of a URI consists of this user
+		field, the password field, and the @ sign following them.  The
+		userinfo part of a URI is optional and MAY be absent when the
+		
+		destination host does not have a notion of users or when the host itself is the resource being identified.  If the @ sign is present in a SIP or SIPS URI, the user field MUST NOT be empty.
+		
+		If the host being addressed can process telephone numbers, for instance, an Internet telephony gateway, a telephone- subscriber field defined in RFC 2806 [9] MAY be used to populate the user field.  There are special escaping rules for encoding telephone-subscriber fields in SIP and SIPS URIs described in Section 19.1.2.
