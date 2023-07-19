@@ -35,12 +35,152 @@ SIPS URI는 리소스에 안전하게 연결하도록 지정한다.  이는 특�
 > The format for a SIPS URI is the same, except that the scheme is "sips" instead of sip.  These tokens, and some of the tokens in their expansions, have the following meanings:
 SIPS URI의 형식은 sip 대신 "sips"라는 점을 제외하면 동일하다.  이러한 토큰과 그 확장에 포함된 일부 토큰은 다음과 같은 의미를 가진다:
 
-	user: The identifier of a particular resource at the host being
-		addressed.  The term "host" in this context frequently refers
-		to a domain.  The "userinfo" of a URI consists of this user
-		field, the password field, and the @ sign following them.  The
-		userinfo part of a URI is optional and MAY be absent when the
+	user: 
+>		The identifier of a particular resource at the host being addressed.  The term "host" in this context frequently refers to a domain.  The "userinfo" of a URI consists of this user field, the password field, and the @ sign following them.  The userinfo part of a URI is optional and MAY be absent when the destination host does not have a notion of users or when the host itself is the resource being identified.  If the @ sign is present in a SIP or SIPS URI, the user field MUST NOT be empty.
+		주소 지정 대상 호스트에 있는 특정 리소스의 식별자입니다.  이 맥락에서 "host"라는 용어는 도메인을 가리키는 경우가 많습니다.  URI의 "userinfo"는 이 사용자 필드, 비밀번호 필드 및 그 뒤에 오는 @ 기호로 구성됩니다.  URI의 userinfo 부분은 선택 사항이며 대상 호스트에 사용자 개념이 없거나 호스트 자체가 식별되는 리소스인 경우에는 누락될 수 있습니다.  SIP 또는 SIPS URI에 @ 기호가 있는 경우 사용자 필드는 비어 있지 않아야 합니다.
 		
-		destination host does not have a notion of users or when the host itself is the resource being identified.  If the @ sign is present in a SIP or SIPS URI, the user field MUST NOT be empty.
+>		If the host being addressed can process telephone numbers, for instance, an Internet telephony gateway, a telephone- subscriber field defined in RFC 2806 [9] MAY be used to populate the user field.  There are special escaping rules for encoding telephone-subscriber fields in SIP and SIPS URIs described in Section 19.1.2.
+		주소를 지정하는 호스트가 인터넷 전화 게이트웨이와 같이 전화 번호를 처리할 수 있는 경우, RFC 2806 [9]에 정의된 전화 가입자 필드를 사용하여 사용자 필드를 채울 수 있습니다.  섹션 19.1.2에 설명된 SIP 및 SIPS URI에서 전화 가입자 필드를 인코딩하기 위한 특수 이스케이프 규칙이 있습니다.
 		
-		If the host being addressed can process telephone numbers, for instance, an Internet telephony gateway, a telephone- subscriber field defined in RFC 2806 [9] MAY be used to populate the user field.  There are special escaping rules for encoding telephone-subscriber fields in SIP and SIPS URIs described in Section 19.1.2.
+	password: 
+>		A password associated with the user.  While the SIP and SIPS URI syntax allows this field to be present, its use is NOT RECOMMENDED, because the passing of authentication information in clear text (such as URIs) has proven to be a security risk in almost every case where it has been used.  For instance, transporting a PIN number in this field exposes the PIN. 
+		사용자와 연결된 비밀번호입니다.  SIP 및 SIPS URI 구문에서는 이 필드를 사용할 수 있지만, 인증 정보를 일반 텍스트(예: URI)로 전달하면 거의 모든 경우에 보안 위험이 있는 것으로 입증되었으므로 이 필드를 사용하지 않는 것이 좋습니다.  예를 들어, 이 필드에 PIN 번호를 전송하면 PIN이 노출됩니다. 
+		
+>		Note that the password field is just an extension of the user portion.  Implementations not wishing to give special significance to the password portion of the field MAY simply treat "user:password" as a single string.
+		비밀번호 필드는 사용자 부분의 확장일 뿐이라는 점에 유의하세요.  필드의 비밀번호 부분에 특별한 의미를 부여하지 않으려는 구현은 단순히 "사용자:비밀번호"를 단일 문자열로 처리할 수 있습니다.
+		
+	host: 
+>		The host providing the SIP resource.  The host part contains either a fully-qualified domain name or numeric IPv4 or IPv6 address.  Using the fully-qualified domain name form is RECOMMENDED whenever possible.
+		SIP 리소스를 제공하는 호스트입니다.  호스트 부분에는 정규화된 도메인 이름 또는 숫자 IPv4 또는 IPv6 주소가 포함됩니다.  가능하면 정규화된 도메인 이름 양식을 사용하는 것이 좋습니다.
+		
+	port: 
+>		The port number where the request is to be sent.
+		요청을 전송할 포트 번호입니다.
+	
+	URI parameters: 
+>		Parameters affecting a request constructed from the URI.
+		URI에서 구성된 요청에 영향을 매개변수입니다.
+		
+>		URI parameters are added after the hostport component and are separated by semi-colons.
+		URI 매개변수는 호스트포트 컴포넌트 뒤에 추가되며 세미콜론으로 구분됩니다.
+		
+		URI parameters take the form: parameter-name "=" parameter-value
+			
+>		Even though an arbitrary number of URI parameters may be included in a URI, any given parameter-name MUST NOT appear more than once.
+		URI에 임의의 수의 URI 매개변수가 포함될 수 있지만, 특정 매개변수 이름이 두 번 이상 표시되어서는 안 됩니다.
+		
+>		This extensible mechanism includes the transport, maddr, ttl, user, method and lr parameters.
+		이 확장 가능한 메커니즘에는 transport, maddr, ttl, user, method 및 lr 매개변수가 포함됩니다.
+		
+>		The transport parameter determines the transport mechanism to be used for sending SIP messages, as specified in [4].  SIP can use any network transport protocol.  Parameter names are defined for UDP (RFC 768 [14]), TCP (RFC 761 [15]), and SCTP (RFC 2960 [16]).  For a SIPS URI, the transport parameter MUST indicate a reliable transport.
+		전송 매개변수는 [4]에 명시된 대로 SIP 메시지 전송에 사용할 전송 메커니즘을 결정합니다.  SIP는 모든 네트워크 전송 프로토콜을 사용할 수 있습니다.  매개변수 이름은 UDP(RFC 768 [14]), TCP(RFC 761 [15]), SCTP(RFC 2960 [16])에 대해 정의되어 있습니다.  SIPS URI의 경우 전송 매개변수는 반드시 신뢰할 수 있는 전송을 나타내야 합니다.
+		
+>		The maddr parameter indicates the server address to be contacted for this user, overriding any address derived from the host field.  When an maddr parameter is present, the port and transport components of the URI apply to the address indicated in the maddr parameter value.  [4] describes the proper interpretation of the transport, maddr, and hostport in order to obtain the destination address, port, and transport for sending a request.
+		maddr 매개변수는 이 사용자에 대해 연락할 서버 주소를 나타내며, 호스트 필드에서 파생된 모든 주소를 재정의합니다.  maddr 매개변수가 있는 경우 URI의 포트 및 전송 구성 요소는 maddr 매개변수 값에 표시된 주소에 적용됩니다.  [4]에서는 요청을 보내기 위한 대상 주소, 포트 및 전송을 얻기 위해 전송, maddr 및 호스트 포트에 대한 적절한 해석을 설명합니다.
+		
+>		The maddr field has been used as a simple form of loose source routing.  It allows a URI to specify a proxy that must be traversed en-route to the destination.  Continuing to use the maddr parameter this way is strongly discouraged (the mechanisms that enable it are deprecated).  Implementations should instead use the Route mechanism described in this document, establishing a pre-existing route set if necessary (see Section 8.1.1.1).  This provides a full URI to describe the node to be traversed.
+		maddr 필드는 간단한 형태의 느슨한 소스 라우팅으로 사용되었습니다.  이 필드를 사용하면 URI가 목적지로 이동하는 도중에 통과해야 하는 프록시를 지정할 수 있습니다.  이 방식으로 maddr 매개 변수를 계속 사용하는 것은 강력히 권장하지 않습니다(이 매개 변수를 활성화하는 메커니즘은 더 이상 사용되지 않습니다).  대신 이 문서에 설명된 Route 메커니즘을 사용하여 필요한 경우 기존 경로 집합을 설정해야 합니다(섹션 8.1.1.1 참조).  이는 트래버스할 노드를 설명하는 전체 URI를 제공합니다.
+		
+>		The ttl parameter determines the time-to-live value of the UDP multicast packet and MUST only be used if maddr is a multicast address and the transport protocol is UDP.  For example, to specify a call to alice@atlanta.com using multicast to 239.255.255.1 with a ttl of 15, the following URI would be used:
+		ttl 매개 변수는 UDP 멀티캐스트 패킷의 수명을 결정하는 값으로, maddr이 멀티캐스트 주소이고 전송 프로토콜이 UDP인 경우에만 사용해야 합니다.  예를 들어 239.255.255.1에 대한 멀티캐스트를 사용하여 alice@atlanta.com 로의 호출을 지정하고 ttl을 15로 지정하려면 다음 URI를 사용합니다:
+		
+		sip:alice@atlanta.com;maddr=239.255.255.1;ttl=15
+		
+>		The set of valid telephone-subscriber strings is a subset of valid user strings.  The user URI parameter exists to distinguish telephone numbers from user names that happen to look like telephone numbers.  If the user string contains a telephone number formatted as a telephone-subscriber, the user parameter value "phone" SHOULD be present.  Even without this parameter, recipients of SIP and SIPS URIs MAY interpret the pre-@ part as a telephone number if local restrictions on the name space for user name allow it.
+		유효한 전화 가입자 문자열 집합은 유효한 사용자 문자열의 하위 집합입니다.  사용자 URI 매개 변수는 전화 번호와 전화 번호처럼 보이는 사용자 이름을 구분하기 위해 존재합니다.  사용자 문자열에 전화 가입자 형식의 전화 번호가 포함되어 있으면 사용자 매개 변수 값 "전화"가 있어야 합니다.  이 매개 변수가 없더라도 사용자 이름의 이름 공간에 대한 로컬 제한이 허용하는 경우 SIP 및 SIPS URI의 수신자는 @ 앞 부분을 전화 번호로 해석할 수 있습니다.
+		
+>		The method of the SIP request constructed from the URI can be specified with the method parameter.
+		메서드 매개변수를 사용하여 URI에서 구성된 SIP 요청의 메서드를 지정할 수 있습니다.
+		
+>		The lr parameter, when present, indicates that the element responsible for this resource implements the routing mechanisms specified in this document.  This parameter will be used in the URIs proxies place into Record-Route header field values, and may appear in the URIs in a pre-existing route set.
+		lr 매개변수가 있는 경우 이 리소스를 담당하는 요소가 이 문서에 지정된 라우팅 메커니즘을 구현함을 나타냅니다.  이 매개변수는 프록시가 레코드-경로 헤더 필드 값에 배치하는 URI에 사용되며, 기존 경로 집합의 URI에 나타날 수 있습니다.
+		
+>		This parameter is used to achieve backwards compatibility with systems implementing the strict-routing mechanisms of RFC 2543 and the rfc2543bis drafts up to bis-05.  An element preparing to send a request based on a URI not containing this parameter can assume the receiving element implements strict-routing and reformat the message to preserve the information in the Request-URI.
+		이 매개변수는 RFC 2543의 엄격한 라우팅 메커니즘을 구현하는 시스템과 이전 버전과의 호환성을 확보하기 위해 사용되며, RFC2543bis 초안(bis-05까지)까지 사용됩니다.  이 매개변수가 포함되지 않은 URI를 기반으로 요청을 보낼 준비를 하는 요소는 수신 요소가 엄격한 라우팅을 구현한다고 가정하고 요청-URI의 정보를 보존하기 위해 메시지 형식을 다시 지정할 수 있습니다.
+		
+>		Since the uri-parameter mechanism is extensible, SIP elements MUST silently ignore any uri-parameters that they do not understand.
+		uri-매개변수 메커니즘은 확장 가능하므로 SIP 요소는 이해하지 못하는 모든 uri-매개변수를 자동으로 무시해야 합니다.
+		
+	Headers: 
+>		Header fields to be included in a request constructed from the URI.
+		URI에서 구성된 요청에 포함될 헤더 필드입니다.
+
+>		Headers fields in the SIP request can be specified with the "?" mechanism within a URI.  The header names and values are encoded in ampersand separated hname = hvalue pairs.  The special hname "body" indicates that the associated hvalue is the message-body of the SIP request.
+		SIP 요청의 헤더 필드는 URI 내에서 "?" 메커니즘을 사용하여 지정할 수 있습니다.  헤더 이름과 값은 앰퍼샌드로 구분된 hname = hvalue 쌍으로 인코딩됩니다.  특수 hname "body"는 연결된 hvalue가 SIP 요청의 메시지 본문임을 나타냅니다.
+		
+
+19.1.3 Example SIP and SIPS URIs
+
+	sip:alice@atlanta.com
+	sip:alice:secretword@atlanta.com;transport=tcp
+	sips:alice@atlanta.com?subject=project%20x&priority=urgent
+	sip:+1-212-555-1212:1234@gateway.com;user=phone
+	sips:1212@gateway.com
+	sip:alice@192.0.2.4
+	sip:atlanta.com;method=REGISTER?to=alice%40atlanta.com
+	sip:alice;day=tuesday@atlanta.com
+	
+> The last sample URI above has a user field value of "alice;day=tuesday".  The escaping rules defined above allow a semicolon to appear unescaped in this field.  For the purposes of this protocol, the field is opaque.  The structure of that value is only useful to the SIP element responsible for the resource.
+위의 마지막 샘플 URI의 사용자 필드 값은 "alice;day=tuesday"입니다.  위에 정의된 이스케이프 규칙에 따라 이 필드에서 세미콜론이 이스케이프되지 않은 상태로 표시될 수 있습니다.  이 프로토콜의 목적상 이 필드는 불투명합니다.  해당 값의 구조는 리소스를 담당하는 SIP 요소에만 유용합니다.
+
+
+19.1.4 URI Comparison
+
+> Some operations in this specification require determining whether two SIP or SIPS URIs are equivalent.  In this specification, registrars need to compare bindings in Contact URIs in REGISTER requests (see Section 10.3.).  SIP and SIPS URIs are compared for equality according to the following rules:
+이 사양의 일부 작업은 두 SIP 또는 SIPS URI가 동등한지 여부를 결정해야 합니다.  이 사양에서 registrar는 REGISTER 요청에서 Contact URI의 바인딩을 비교해야 합니다(섹션 10.3. 참조).  다음 규칙에 따라 SIP 및 SIPS URI의 동일성 여부를 비교합니다:
+
+>	o  A SIP and SIPS URI are never equivalent.
+	o SIP와 SIPS URI는 결코 동일하지 않습니다.
+	
+>	o  Comparison of the userinfo of SIP and SIPS URIs is case-sensitive.  This includes userinfo containing passwords or formatted as telephone-subscribers.  Comparison of all other components of the URI is case-insensitive unless explicitly defined otherwise.
+	o SIP 및 SIPS URI의 사용자 정보 비교는 대소문자를 구분합니다.  여기에는 비밀번호가 포함되어 있거나 전화 가입자로 형식이 지정된 사용자 정보가 포함됩니다.  명시적으로 달리 정의되지 않는 한 URI의 다른 모든 구성 요소의 비교는 대소문자를 구분하지 않습니다.
+	
+>	o  The ordering of parameters and header fields is not significant in comparing SIP and SIPS URIs.
+	o 매개변수 및 헤더 필드의 순서는 SIP와 SIPS URI를 비교할 때 중요하지 않습니다.
+	
+>	o  Characters other than those in the "reserved" set (see RFC 2396 [5]) are equivalent to their ""%" HEX HEX" encoding.
+	o "예약" 세트(RFC 2396 [5] 참조)에 있는 문자 이외의 문자는 해당 ""%" HEX HEX" 인코딩과 동일합니다.
+	
+>	o  An IP address that is the result of a DNS lookup of a host name does not match that host name.
+	o 호스트 이름에 대한 DNS 조회 결과의 IP 주소가 해당 호스트 이름과 일치하지 않습니다.
+	
+>	o  For two URIs to be equal, the user, password, host, and port components must match.
+	o 두 URI가 동일하려면 사용자, 비밀번호, 호스트 및 포트 구성 요소가 일치해야 합니다.
+
+>		A URI omitting the user component will not match a URI that includes one.  A URI omitting the password component will not match a URI that includes one.
+		사용자 컴포넌트가 생략된 URI는 사용자 컴포넌트가 포함된 URI와 일치하지 않습니다.  비밀번호 구성 요소가 생략된 URI는 비밀번호 구성 요소가 포함된 URI와 일치하지 않습니다.
+	
+>		A URI omitting any component with a default value will not match a URI explicitly containing that component with its default value.  For instance, a URI omitting the optional port component will not match a URI explicitly declaring port 5060. The same is true for the transport-parameter, ttl-parameter, user-parameter, and method components.
+		기본값이 있는 구성 요소를 생략한 URI는 해당 구성 요소를 명시적으로 포함하는 URI와 기본값이 일치하지 않습니다.  예를 들어, 선택적 포트 구성 요소를 생략한 URI는 명시적으로 포트 5060을 선언하는 URI와 일치하지 않습니다. 전송 매개변수, ttl 매개변수, 사용자 매개변수 및 메서드 구성 요소도 마찬가지입니다.
+	
+>			Defining sip:user@host to not be equivalent to sip:user@host:5060 is a change from RFC 2543.  When deriving addresses from URIs, equivalent addresses are expected from equivalent URIs.  The URI sip:user@host:5060 will always resolve to port 5060.  The URI sip:user@host may resolve to other ports through the DNS SRV mechanisms detailed in [4].
+			sip:사용자@호스트를 sip:사용자@호스트:5060과 동등하지 않도록 정의하는 것은 RFC 2543에서 변경된 사항입니다.  URI에서 주소를 파생할 때는 동등한 URI에서 동등한 주소가 예상됩니다.  URI sip:user@host:5060은 항상 포트 5060으로 확인됩니다.  URI sip:user@host는 [4]에 자세히 설명된 DNS SRV 메커니즘을 통해 다른 포트로 확인할 수 있습니다.
+			
+	o  URI uri-parameter components are compared as follows:
+
+		-  Any uri-parameter appearing in both URIs must match.
+	
+		-  A user, ttl, or method uri-parameter appearing in only one URI never matches, even if it contains the default value.
+		
+		-  A URI that includes an maddr parameter will not match a URI that contains no maddr parameter.
+		
+		-  All other uri-parameters appearing in only one URI are ignored when comparing the URIs.
+	
+	o  URI header components are never ignored.  Any present header component MUST be present in both URIs and match for the URIs to match.  The matching rules are defined for each header field in Section 20.
+	
+The URIs within each of the following sets are equivalent:
+
+	sip:%61lice@atlanta.com;transport=TCP
+	sip:alice@AtLanTa.CoM;Transport=tcp
+	
+	sip:carol@chicago.com
+	sip:carol@chicago.com;newparam=5
+	sip:carol@chicago.com;security=on
+	
+	sip:biloxi.com;transport=tcp;method=REGISTER?to=sip:bob%40biloxi.com
+	sip:biloxi.com;method=REGISTER;transport=tcp?to=sip:bob%40biloxi.com
+	
+	sip:alice@atlanta.com?subject=project%20x&priority=urgent
+	sip:alice@atlanta.com?priority=urgent&subject=project%20x
+	
+	The URIs within each of the following sets are not equivalent:
