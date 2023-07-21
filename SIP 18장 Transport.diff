@@ -125,7 +125,7 @@ TCP와 같은 스트림 지향 전송의 경우 Content-Length 헤더 필드는 
 오류 처리는 메시지가 요청인지 응답인지에 관계없이 이루어진다.
 
 > If the transport user asks for a message to be sent over an unreliable transport, and the result is an ICMP error, the behavior depends on the type of ICMP error.  Host, network, port or protocol unreachable errors, or parameter problem errors SHOULD cause the transport layer to inform the transport user of a failure in sending. Source quench and TTL exceeded ICMP errors SHOULD be ignored.
-전송 사용자가 신뢰할 수 없는 전송을 통해 메시지를 전송하도록 요청하고 그 결과 ICMP 오류가 발생하는 경우, 동작은 ICMP 오류 유형에 따라 달라진다.  호스트, 네트워크, 포트 또는 프로토콜에 연결할 수 없는 오류 또는 매개변수 문제 오류로 인해 전송 계층에서 전송 사용자에게 전송 실패를 알려야 한다. 소스 퀀치 및 TTL 초과 ICMP 오류는 무시해야 한다.
+전송 사용자가 신뢰할 수 없는 전송을 통해 메시지를 전송하도록 요청하고 그 결과 ICMP 오류가 발생하는 경우, 동작은 ICMP 오류 유형에 따라 달라진다.  Host, network, port 또는 protocol에 연결할 수 없는 오류 또는 매개변수 문제 오류로 인해 전송 계층에서 전송 사용자에게 전송 실패를 알려야 한다. 소스 퀀치 및 TTL 초과 ICMP 오류는 무시해야 한다.
 
 > If the transport user asks for a request to be sent over a reliable transport, and the result is a connection failure, the transport layer SHOULD inform the transport user of a failure in sending.
 전송 사용자가 신뢰할 수 있는 전송을 통해 요청을 전송하도록 요청하고 그 결과 연결이 실패한 경우 전송 계층은 전송 사용자에게 전송 실패를 알려야 한다.

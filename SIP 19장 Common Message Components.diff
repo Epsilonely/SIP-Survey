@@ -139,7 +139,7 @@ SIPS URI의 형식은 sip 대신 "sips"라는 점을 제외하면 동일하다. 
 	o 매개변수 및 헤더 필드의 순서는 SIP와 SIPS URI를 비교할 때 중요하지 않습니다.
 	
 >	o  Characters other than those in the "reserved" set (see RFC 2396 [5]) are equivalent to their ""%" HEX HEX" encoding.
-	o "예약" 세트(RFC 2396 [5] 참조)에 있는 문자 이외의 문자는 해당 ""%" HEX HEX" 인코딩과 동일합니다.
+	o "reserved" 세트(RFC 2396 [5] 참조)에 있는 문자 이외의 문자는 해당 ""%" HEX HEX" 인코딩과 동일합니다.
 	
 >	o  An IP address that is the result of a DNS lookup of a host name does not match that host name.
 	o 호스트 이름에 대한 DNS 조회 결과의 IP 주소가 해당 호스트 이름과 일치하지 않습니다.
@@ -154,7 +154,7 @@ SIPS URI의 형식은 sip 대신 "sips"라는 점을 제외하면 동일하다. 
 		기본값이 있는 구성 요소를 생략한 URI는 해당 구성 요소를 명시적으로 포함하는 URI와 기본값이 일치하지 않습니다.  예를 들어, 선택적 포트 구성 요소를 생략한 URI는 명시적으로 포트 5060을 선언하는 URI와 일치하지 않습니다. 전송 매개변수, ttl 매개변수, 사용자 매개변수 및 메서드 구성 요소도 마찬가지입니다.
 	
 >			Defining sip:user@host to not be equivalent to sip:user@host:5060 is a change from RFC 2543.  When deriving addresses from URIs, equivalent addresses are expected from equivalent URIs.  The URI sip:user@host:5060 will always resolve to port 5060.  The URI sip:user@host may resolve to other ports through the DNS SRV mechanisms detailed in [4].
-			sip:사용자@호스트를 sip:사용자@호스트:5060과 동등하지 않도록 정의하는 것은 RFC 2543에서 변경된 사항입니다.  URI에서 주소를 파생할 때는 동등한 URI에서 동등한 주소가 예상됩니다.  URI sip:user@host:5060은 항상 포트 5060으로 확인됩니다.  URI sip:user@host는 [4]에 자세히 설명된 DNS SRV 메커니즘을 통해 다른 포트로 확인할 수 있습니다.
+			sip:user@host를 sip:user@host:5060과 동등하지 않도록 정의하는 것은 RFC 2543에서 변경된 사항입니다.  URI에서 주소를 파생할 때는 동등한 URI에서 동등한 주소가 예상됩니다.  URI sip:user@host:5060은 항상 포트 5060으로 확인됩니다.  URI sip:user@host는 [4]에 자세히 설명된 DNS SRV 메커니즘을 통해 다른 포트로 확인할 수 있습니다.
 			
 >	o  URI uri-parameter components are compared as follows:
 	o URI uri-parameter 구성 요소는 다음과 같이 비교됩니다:
@@ -163,13 +163,13 @@ SIPS URI의 형식은 sip 대신 "sips"라는 점을 제외하면 동일하다. 
 		- 두 URI에 나타나는 모든 URI 매개변수는 일치해야 합니다.
 	
 >		-  A user, ttl, or method uri-parameter appearing in only one URI never matches, even if it contains the default value.
-		- 하나의 URI에만 나타나는 사용자, ttl 또는 메서드 uri-매개변수는 기본값이 포함되어 있더라도 일치하지 않습니다.
+		- 하나의 URI에만 나타나는 user, ttl 또는 method uri-parameter 기본값이 포함되어 있더라도 일치하지 않습니다.
 		
 >		-  A URI that includes an maddr parameter will not match a URI that contains no maddr parameter.
 		- maddr 매개 변수가 포함된 URI는 maddr 매개 변수가 포함되지 않은 URI와 일치하지 않습니다.
 		
 >		-  All other uri-parameters appearing in only one URI are ignored when comparing the URIs.
-		- 하나의 URI에만 나타나는 다른 모든 uri-매개변수는 URI를 비교할 때 무시됩니다.
+		- 하나의 URI에만 나타나는 다른 모든 uri-parameters 는 URI 를 비교할 때 무시됩니다.
 	
 >	o  URI header components are never ignored.  Any present header component MUST be present in both URIs and match for the URIs to match.  The matching rules are defined for each header field in Section 20.
 	o URI 헤더 구성 요소는 절대 무시되지 않습니다.  존재하는 모든 헤더 구성 요소는 두 URI에 모두 존재해야 하며 URI가 일치하려면 일치해야 합니다.  매칭 규칙은 섹션 20의 각 헤더 필드에 정의되어 있습니다.
@@ -179,14 +179,14 @@ SIPS URI의 형식은 sip 대신 "sips"라는 점을 제외하면 동일하다. 
 
 	sip:%61lice@atlanta.com;transport=TCP
 	sip:alice@AtLanTa.CoM;Transport=tcp
-	
+
 	sip:carol@chicago.com
 	sip:carol@chicago.com;newparam=5
 	sip:carol@chicago.com;security=on
-	
+
 	sip:biloxi.com;transport=tcp;method=REGISTER?to=sip:bob%40biloxi.com
 	sip:biloxi.com;method=REGISTER;transport=tcp?to=sip:bob%40biloxi.com
-	
+
 	sip:alice@atlanta.com?subject=project%20x&priority=urgent
 	sip:alice@atlanta.com?priority=urgent&subject=project%20x
 	
@@ -252,7 +252,7 @@ Note that equality is not transitive:
 특정 URI에서 형성된 요청을 전송하려면 구현에서 사용할 수 없는 기능이 필요할 수 있습니다.  예를 들어 URI는 구현되지 않은 전송 또는 확장을 사용함을 나타낼 수 있습니다.  구현은 이러한 요청을 기능에 맞게 수정하지 말고 전송을 거부해야 합니다.  구현은 지원하지 않는 확장을 요구하는 요청을 전송해서는 안 됩니다.
 
 >	For example, such a request can be formed through the presence of a Require header parameter or a method URI parameter with an unknown or explicitly unsupported value.
-	예를 들어, 이러한 요청은 알 수 없거나 명시적으로 지원되지 않는 값이 있는 Require 헤더 매개변수 또는 메서드 URI 매개변수가 있는 경우 형성될 수 있습니다.
+	예를 들어, 이러한 요청은 알 수 없거나 명시적으로 지원되지 않는 값이 있는 Require 헤더 파라미터 또는 메서드 URI 파라미터가 있는 경우 형성될 수 있습니다.
 	
 	
 19.1.6 Relating SIP URIs and tel URLs
