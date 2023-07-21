@@ -156,19 +156,26 @@ SIPS URI의 형식은 sip 대신 "sips"라는 점을 제외하면 동일하다. 
 >			Defining sip:user@host to not be equivalent to sip:user@host:5060 is a change from RFC 2543.  When deriving addresses from URIs, equivalent addresses are expected from equivalent URIs.  The URI sip:user@host:5060 will always resolve to port 5060.  The URI sip:user@host may resolve to other ports through the DNS SRV mechanisms detailed in [4].
 			sip:사용자@호스트를 sip:사용자@호스트:5060과 동등하지 않도록 정의하는 것은 RFC 2543에서 변경된 사항입니다.  URI에서 주소를 파생할 때는 동등한 URI에서 동등한 주소가 예상됩니다.  URI sip:user@host:5060은 항상 포트 5060으로 확인됩니다.  URI sip:user@host는 [4]에 자세히 설명된 DNS SRV 메커니즘을 통해 다른 포트로 확인할 수 있습니다.
 			
-	o  URI uri-parameter components are compared as follows:
+>	o  URI uri-parameter components are compared as follows:
+	o URI uri-parameter 구성 요소는 다음과 같이 비교됩니다:
 
-		-  Any uri-parameter appearing in both URIs must match.
+>		-  Any uri-parameter appearing in both URIs must match.
+		- 두 URI에 나타나는 모든 URI 매개변수는 일치해야 합니다.
 	
-		-  A user, ttl, or method uri-parameter appearing in only one URI never matches, even if it contains the default value.
+>		-  A user, ttl, or method uri-parameter appearing in only one URI never matches, even if it contains the default value.
+		- 하나의 URI에만 나타나는 사용자, ttl 또는 메서드 uri-매개변수는 기본값이 포함되어 있더라도 일치하지 않습니다.
 		
-		-  A URI that includes an maddr parameter will not match a URI that contains no maddr parameter.
+>		-  A URI that includes an maddr parameter will not match a URI that contains no maddr parameter.
+		- maddr 매개 변수가 포함된 URI는 maddr 매개 변수가 포함되지 않은 URI와 일치하지 않습니다.
 		
-		-  All other uri-parameters appearing in only one URI are ignored when comparing the URIs.
+>		-  All other uri-parameters appearing in only one URI are ignored when comparing the URIs.
+		- 하나의 URI에만 나타나는 다른 모든 uri-매개변수는 URI를 비교할 때 무시됩니다.
 	
-	o  URI header components are never ignored.  Any present header component MUST be present in both URIs and match for the URIs to match.  The matching rules are defined for each header field in Section 20.
+>	o  URI header components are never ignored.  Any present header component MUST be present in both URIs and match for the URIs to match.  The matching rules are defined for each header field in Section 20.
+	o URI 헤더 구성 요소는 절대 무시되지 않습니다.  존재하는 모든 헤더 구성 요소는 두 URI에 모두 존재해야 하며 URI가 일치하려면 일치해야 합니다.  매칭 규칙은 섹션 20의 각 헤더 필드에 정의되어 있습니다.
 	
-The URIs within each of the following sets are equivalent:
+> The URIs within each of the following sets are equivalent:
+다음 각 세트 내의 URI는 동일합니다:
 
 	sip:%61lice@atlanta.com;transport=TCP
 	sip:alice@AtLanTa.CoM;Transport=tcp
@@ -183,4 +190,154 @@ The URIs within each of the following sets are equivalent:
 	sip:alice@atlanta.com?subject=project%20x&priority=urgent
 	sip:alice@atlanta.com?priority=urgent&subject=project%20x
 	
-	The URIs within each of the following sets are not equivalent:
+> The URIs within each of the following sets are not equivalent:
+다음 각 세트 내의 URI는 동일하지 않습니다:
+
+SIP:ALICE@AtLanTa.CoM;Transport=udp             (different usernames)
+sip:alice@AtLanTa.CoM;Transport=UDP
+
+sip:bob@biloxi.com                   (can resolve to different ports)
+sip:bob@biloxi.com:5060
+
+sip:bob@biloxi.com              (can resolve to different transports)
+sip:bob@biloxi.com;transport=udp
+
+sip:bob@biloxi.com     (can resolve to different port and transports)
+sip:bob@biloxi.com:6000;transport=tcp
+
+sip:carol@chicago.com                    (different header component)
+sip:carol@chicago.com?Subject=next%20meeting
+
+sip:bob@phone21.boxesbybob.com   (even though that's what
+sip:bob@192.0.2.4                			 phone21.boxesbybob.com resolves to)
+
+Note that equality is not transitive:
+	o  sip:carol@chicago.com == sip:carol@chicago.com;security=on (are equivalent)
+	
+	o  sip:carol@chicago.com == sip:carol@chicago.com;security=off (are equivalent)
+	
+	o  sip:carol@chicago.com;security=on != sip:carol@chicago.com;security=off (are not equivalent)
+
+
+19.1.5 Forming Requests from a URI
+
+> An implementation needs to take care when forming requests directly from a URI.  URIs from business cards, web pages, and even from sources inside the protocol such as registered contacts may contain inappropriate header fields or body parts.
+구현은 URI에서 직접 요청을 생성할 때 주의를 기울여야 합니다.  명함, 웹 페이지, 심지어 등록된 연락처와 같은 프로토콜 내부 소스의 URI에는 부적절한 헤더 필드나 본문 부분이 포함될 수 있습니다.
+
+> An implementation MUST include any provided transport, maddr, ttl, or user parameter in the Request-URI of the formed request.  If the URI contains a method parameter, its value MUST be used as the method of the request.  The method parameter MUST NOT be placed in the Request-URI.  Unknown URI parameters MUST be placed in the message's Request-URI.
+구현은 형성된 요청의 Request-URI에 제공된 전송, maddr, ttl 또는 사용자 매개변수를 포함해야 합니다.  URI에 메소드 매개변수가 포함된 경우 해당 값을 요청의 메소드로 사용해야 합니다.  메소드 매개변수는 요청-URI에 배치해서는 안 됩니다.  알 수 없는 URI 매개 변수는 메시지의 Request-URI에 배치해야 합니다.
+
+> An implementation SHOULD treat the presence of any headers or body parts in the URI as a desire to include them in the message, and choose to honor the request on a per-component basis.
+구현은 URI에 헤더 또는 본문 부분이 있으면 이를 메시지에 포함하고자 하는 것으로 간주하고 구성 요소별로 요청을 처리하도록 선택해야 합니다.
+
+> An implementation SHOULD NOT honor these obviously dangerous header fields: From, Call-ID, CSeq, Via, and Record-Route.
+구현에서 이러한 명백히 위험한 헤더 필드를 무시해서는 안 됩니다: From, Call-ID, CSeq, Via 및 Record-Route.
+
+> An implementation SHOULD NOT honor any requested Route header field values in order to not be used as an unwitting agent in malicious attacks.
+악의적인 공격에 악의적인 에이전트로 사용되지 않도록 구현은 요청된 Route 헤더 필드 값을 무시해서는 안 됩니다.
+
+> An implementation SHOULD NOT honor requests to include header fields that may cause it to falsely advertise its location or capabilities. These include: Accept, Accept-Encoding, Accept-Language, Allow, Contact (in its dialog usage), Organization, Supported, and User-Agent.
+구현은 위치나 기능을 허위로 광고할 수 있는 헤더 필드를 포함하라는 요청을 수락해서는 안 됩니다. 여기에는 다음이 포함됩니다: Accept, Accept-Encoding, Accept-Language, Allow, Contact(dialog 사용 시), Organization, Supported 및 User-Agent.
+
+> An implementation SHOULD verify the accuracy of any requested descriptive header fields, including: Content-Disposition, Content- Encoding, Content-Language, Content-Length, Content-Type, Date, Mime-Version, and Timestamp.
+구현은 다음을 포함하여 요청된 모든 설명 헤더 필드의 정확성을 확인해야 합니다: Content-Disposition, Content- Encoding, Content-Language, Content-Length, Content-Type, Date, Mime-Version, and Timestamp
+
+> If the request formed from constructing a message from a given URI is not a valid SIP request, the URI is invalid.  An implementation MUST NOT proceed with transmitting the request.  It should instead pursue the course of action due an invalid URI in the context it occurs.
+지정된 URI에서 메시지를 구성하여 형성된 요청이 유효한 SIP 요청이 아닌 경우, 해당 URI는 유효하지 않습니다.  구현은 요청 전송을 진행하지 않아야 합니다.  대신 요청이 발생한 컨텍스트에서 유효하지 않은 URI로 인한 조치 과정을 따라야 합니다.
+
+>	The constructed request can be invalid in many ways.  These include, but are not limited to, syntax error in header fields, invalid combinations of URI parameters, or an incorrect description of the message body.
+	구성된 요청은 여러 가지 방식으로 유효하지 않을 수 있습니다.  헤더 필드의 구문 오류, 잘못된 URI 매개변수 조합, 메시지 본문에 대한 잘못된 설명 등이 여기에 포함되나 이에 국한되지 않습니다.
+	
+> Sending a request formed from a given URI may require capabilities unavailable to the implementation.  The URI might indicate use of an unimplemented transport or extension, for example.  An implementation SHOULD refuse to send these requests rather than modifying them to match their capabilities.  An implementation MUST NOT send a request requiring an extension that it does not support.
+특정 URI에서 형성된 요청을 전송하려면 구현에서 사용할 수 없는 기능이 필요할 수 있습니다.  예를 들어 URI는 구현되지 않은 전송 또는 확장을 사용함을 나타낼 수 있습니다.  구현은 이러한 요청을 기능에 맞게 수정하지 말고 전송을 거부해야 합니다.  구현은 지원하지 않는 확장을 요구하는 요청을 전송해서는 안 됩니다.
+
+>	For example, such a request can be formed through the presence of a Require header parameter or a method URI parameter with an unknown or explicitly unsupported value.
+	예를 들어, 이러한 요청은 알 수 없거나 명시적으로 지원되지 않는 값이 있는 Require 헤더 매개변수 또는 메서드 URI 매개변수가 있는 경우 형성될 수 있습니다.
+	
+	
+19.1.6 Relating SIP URIs and tel URLs
+
+> When a tel URL (RFC 2806 [9]) is converted to a SIP or SIPS URI, the entire telephone-subscriber portion of the tel URL, including any parameters, is placed into the userinfo part of the SIP or SIPS URI.
+tel URL(RFC 2806[9])이 SIP 또는 SIPS URI로 변환되면 모든 매개변수를 포함하여 tel URL의 전체 전화 가입자 부분이 SIP 또는 SIPS URI의 userinfo 부분에 배치됩니다.
+
+Thus, tel:+358-555-1234567;postd=pp22 becomes
+
+	sip:+358-555-1234567;postd=pp22@foo.com;user=phone
+
+or
+	sips:+358-555-1234567;postd=pp22@foo.com;user=phone
+
+not
+	sip:+358-555-1234567@foo.com;postd=pp22;user=phone
+
+or
+	sips:+358-555-1234567@foo.com;postd=pp22;user=phone
+	
+> In general, equivalent "tel" URLs converted to SIP or SIPS URIs in this fashion may not produce equivalent SIP or SIPS URIs.  The userinfo of SIP and SIPS URIs are compared as a case-sensitive string.  Variance in case-insensitive portions of tel URLs and reordering of tel URL parameters does not affect tel URL equivalence, but does affect the equivalence of SIP URIs formed from them.
+일반적으로 이러한 방식으로 변환된 동일한 "tel" URL은 동일한 SIP 또는 SIPS URI를 생성하지 못할 수 있습니다.  SIP 및 SIPS URI의 사용자 정보는 대소문자를 구분하는 문자열로 비교됩니다.  전화 URL의 대소문자를 구분하지 않는 부분의 차이와 전화 URL 매개 변수의 재정렬은 전화 URL의 동등성에는 영향을 미치지 않지만 이로부터 형성된 SIP URI의 동등성에는 영향을 미칩니다.
+
+For example,
+
+	tel:+358-555-1234567;postd=pp22
+	tel:+358-555-1234567;POSTD=PP22
+	
+are equivalent, while
+
+	sip:+358-555-1234567;postd=pp22@foo.com;user=phone
+	sip:+358-555-1234567;POSTD=PP22@foo.com;user=phone
+	
+are not.
+
+Likewise,
+
+	tel:+358-555-1234567;postd=pp22;isub=1411
+	tel:+358-555-1234567;isub=1411;postd=pp22
+
+are equivalent, while
+
+	sip:+358-555-1234567;postd=pp22;isub=1411@foo.com;user=phone
+	sip:+358-555-1234567;isub=1411;postd=pp22@foo.com;user=phone
+
+are not.
+
+> To mitigate this problem, elements constructing telephone-subscriber fields to place in the userinfo part of a SIP or SIPS URI SHOULD fold any case-insensitive portion of telephone-subscriber to lower case, and order the telephone-subscriber parameters lexically by parameter name, excepting isdn-subaddress and post-dial, which occur first and in that order.  (All components of a tel URL except for future- extension parameters are defined to be compared case-insensitive.)
+이 문제를 완화하기 위해 전화-가입자 필드를 구성하여 SIP 또는 SIPS URI의 userinfo 부분에 배치하는 요소는 전화-가입자의 대소문자를 구분하지 않는 부분을 소문자로 접어야 하며, 전화-가입자 매개변수를 매개변수 이름별로 사전순으로 정렬해야 합니다(먼저 발생하는 isdn-subaddress 및 post-dial은 제외).  (향후 내선 번호 매개변수를 제외한 전화 URL의 모든 구성 요소는 대소문자를 구분하지 않고 비교하도록 정의됩니다.)
+
+Following this suggestion, both
+
+	tel:+358-555-1234567;postd=pp22
+	tel:+358-555-1234567;POSTD=PP22
+
+	become
+
+		sip:+358-555-1234567;postd=pp22@foo.com;user=phone
+
+and both
+
+		tel:+358-555-1234567;tsp=a.b;phone-context=5
+		tel:+358-555-1234567;phone-context=5;tsp=a.b
+
+	become
+
+		sip:+358-555-1234567;phone-context=5;tsp=a.b@foo.com;user=phone
+
+		
+19.2 Option Tags
+
+> Option tags are unique identifiers used to designate new options (extensions) in SIP.  These tags are used in Require (Section 20.32), Proxy-Require (Section 20.29), Supported (Section 20.37) and Unsupported (Section 20.40) header fields.  Note that these options appear as parameters in those header fields in an option-tag = token form (see Section 25 for the definition of token).
+옵션 태그는 SIP에서 새 옵션(확장)을 지정하는 데 사용되는 고유 식별자입니다.  이러한 태그는 Require(섹션 20.32), Proxy-Require(섹션 20.29), Supported(섹션 20.37) 및 Unsupported(섹션 20.40) 헤더 필드에 사용됩니다.  이러한 옵션은 옵션-태그 = 토큰 형식의 헤더 필드에 매개변수로 나타납니다(토큰의 정의는 섹션 25 참조).
+
+> Option tags are defined in standards track RFCs.  This is a change from past practice, and is instituted to ensure continuing multi- vendor interoperability (see discussion in Section 20.32 and Section 20.37).  An IANA registry of option tags is used to ensure easy reference.
+옵션 태그는 표준 트랙 RFC에 정의되어 있습니다.  이는 과거 관행에서 변경된 것으로, 여러 공급업체 간의 지속적인 상호 운용성을 보장하기 위해 도입된 것입니다(섹션 20.32 및 섹션 20.37의 논의 참조).  쉽게 참조할 수 있도록 옵션 태그의 IANA 레지스트리가 사용됩니다.
+
+
+19.3 Tags
+
+> The "tag" parameter is used in the To and From header fields of SIP messages.  It serves as a general mechanism to identify a dialog, which is the combination of the Call-ID along with two tags, one from each participant in the dialog.  When a UA sends a request outside of a dialog, it contains a From tag only, providing "half" of the dialog ID.  The dialog is completed from the response(s), each of which contributes the second half in the To header field.  The forking of SIP requests means that multiple dialogs can be established from a single request.  This also explains the need for the two-sided dialog identifier; without a contribution from the recipients, the originator could not disambiguate the multiple dialogs established from a single request.
+"tag" 매개변수는 SIP 메시지의 To 및 From 헤더 필드에 사용됩니다.  이 매개 변수는 dialog를 식별하는 일반적인 메커니즘으로 사용되며, dialog의 각 참가자가 하나씩 지정한 두 개의 태그와 Call-ID의 조합으로 이루어집니다.  UA가 dialog 외부로 요청을 보낼 때는 발신자 태그만 포함되어 dialog ID의 "half"을 제공합니다.  dialog는 응답에서 완료되며, 각 응답은 To 헤더 필드에 나머지 절반을 제공합니다.  SIP 요청의 포크는 단일 요청에서 여러 개의 dialog를 설정할 수 있음을 의미합니다.  수신자의 기여가 없으면 발신자는 단일 요청에서 설정된 여러 dialog를 명확하게 구분할 수 없기 때문에 양면 dialog 식별자의 필요성도 설명할 수 있습니다.
+
+> When a tag is generated by a UA for insertion into a request or response, it MUST be globally unique and cryptographically random with at least 32 bits of randomness.  A property of this selection requirement is that a UA will place a different tag into the From header of an INVITE than it would place into the To header of the response to the same INVITE.  This is needed in order for a UA to invite itself to a session, a common case for "hairpinning" of calls in PSTN gateways.  Similarly, two INVITEs for different calls will have different From tags, and two responses for different calls will have different To tags.
+요청 또는 응답에 삽입하기 위해 UA가 태그를 생성하는 경우, 태그는 전 세계적으로 고유해야 하며 최소 32비트의 무작위성을 가진 암호학적으로 무작위적이어야 합니다.  이 선택 요구 사항의 속성은 UA가 동일한 INVITE에 대한 응답의 To 헤더에 넣는 것과는 다른 태그를 INVITE의 From 헤더에 넣는다는 것입니다.  이는 UA가 세션에 자신을 초대하기 위해 필요한 것으로, PSTN 게이트웨이에서 통화를 "헤어핀"하는 일반적인 경우입니다.  마찬가지로 서로 다른 통화에 대한 두 개의 INVITE는 서로 다른 From 태그를 가지며, 서로 다른 통화에 대한 두 개의 응답은 서로 다른 To 태그를 갖습니다.
+
+> Besides the requirement for global uniqueness, the algorithm for generating a tag is implementation-specific.  Tags are helpful in fault tolerant systems, where a dialog is to be recovered on an alternate server after a failure.  A UAS can select the tag in such a way that a backup can recognize a request as part of a dialog on the failed server, and therefore determine that it should attempt to recover the dialog and any other state associated with it.
+글로벌 고유성 요구 사항 외에도 태그를 생성하는 알고리즘은 구현에 따라 다릅니다.  태그는 장애 발생 후 대체 서버에서 dialog를 복구해야 하는 내결함성 시스템에서 유용합니다.  UAS는 백업이 요청을 장애 서버의 dialog의 일부로 인식할 수 있도록 태그를 선택하여 dialog 및 이와 관련된 다른 상태를 복구하려고 시도할지 결정할 수 있습니다.
