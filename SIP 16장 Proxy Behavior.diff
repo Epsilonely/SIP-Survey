@@ -123,7 +123,7 @@ stateful 프록시는 새로운 요청이 수신될 때마다 새 서버 트랜�
 	향후 이 프로토콜의 확장으로 프록시에서 특별한 처리가 필요한 기능이 도입될 수 있다.  엔드포인트는 이러한 기능을 사용하는 요청에 Proxy-Require 헤더 필드를 포함시켜 해당 기능을 이해하지 못하면 요청을 처리하지 않도록 프록시에 알린다.
 	
 >	If the request contains a Proxy-Require header field (Section 20.29) with one or more option-tags this element does not understand, the element MUST return a 420 (Bad Extension) response.  The response MUST include an Unsupported (Section 20.40) header field listing those option-tags the element did not understand.
-	요청에 이 요소가 이해하지 못하는 하나 이상의 옵션 태그가 있는 Proxy-RequireLoop 헤더 필드(섹션 20.29)가 포함된 경우 요소는 반드시 420(Bad Extension) 응답을 반환해야 한다.  응답에는 요소에서 이해하지 못하는 옵션 태그를 나열하는 Unsupported(섹션 20.40) 헤더 필드가 포함되어야 한다.
+	요청에 이 요소가 이해하지 못하는 하나 이상의 옵션 태그가 있는 Proxy-Require 헤더 필드(섹션 20.29)가 포함된 경우 요소는 반드시 420(Bad Extension) 응답을 반환해야 한다.  응답에는 요소에서 이해하지 못하는 옵션 태그를 나열하는 Unsupported(섹션 20.40) 헤더 필드가 포함되어야 한다.
 	
 
 [6] Proxy-Authorization check
@@ -209,7 +209,7 @@ Request-URI가 프록시가 Target Set을 결정하는 데 충분한 정보를 �
 일반적인 순서 지정 메커니즘은 Contact 헤더 필드에서 얻은 대상의 qvalue 매개변수를 사용하는 것이다(섹션 20.10 참조).  대상은 가장 높은 qvalue 값부터 가장 낮은 값까지 처리된다.  q값이 동일한 대상은 병렬로 처리될 수 있다.
 
 > A stateful proxy must have a mechanism to maintain the target set as responses are received and associate the responses to each forwarded request with the original request.  For the purposes of this model, this mechanism is a "response context" created by the proxy layer before forwarding the first request.
-stateful 프록시에는 응답이 수신될 때 대상 집합을 유지하고 전달된 각 요청에 대한 응답을 원래 요청과 연결하는 메커니즘이 있어야 한다.  이 모델의 목적상 이 메커니즘은 첫 번째 요청을 전달하기 전에 프록시 계층에서 생성하는 "response context"이다.
+stateful 프록시에는 응답이 수신될 때 target set을 유지하고 전달된 각 요청에 대한 응답을 원래 요청과 연결하는 메커니즘이 있어야 한다.  이 모델의 목적상 이 메커니즘은 첫 번째 요청을 전달하기 전에 프록시 계층에서 생성하는 "response context"이다.
 
 > For each target, the proxy forwards the request following these steps:
 각 대상에 대해 프록시는 다음 단계에 따라 요청을 전달한다:
